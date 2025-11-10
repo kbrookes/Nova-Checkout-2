@@ -31,25 +31,47 @@ class Shortcode {
 	public function render_checkout_form( array $atts ): string {
 		$atts = shortcode_atts(
 			array(
-				'country'      => 'au',
-				'success_url'  => home_url( '/checkout-success/' ),
-				'cancel_url'   => '',
-				'button_text'  => 'Continue to Checkout',
-				'show_tiers'   => 'true',
-				'default_tier' => '',
+				'country'                => 'au',
+				'success_url'            => home_url( '/checkout-success/' ),
+				'cancel_url'             => '',
+				'button_text'            => 'Continue to Checkout',
+				'show_tiers'             => 'true',
+				'default_tier'           => '',
+				'default_billing_period' => '',
+				'default_users'          => '5',
+				'use_url_params'         => 'true',
+				'show_period_toggle'     => 'true',
 			),
 			$atts,
 			'nova_checkout'
 		);
 
+		// Check URL parameters if enabled.
+		$url_tier   = '';
+		$url_period = '';
+		if ( filter_var( $atts['use_url_params'], FILTER_VALIDATE_BOOLEAN ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$url_tier = isset( $_GET['tier'] ) ? sanitize_tier( sanitize_text_field( wp_unslash( $_GET['tier'] ) ) ) : '';
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$url_period = isset( $_GET['period'] ) ? sanitize_billing_period( sanitize_text_field( wp_unslash( $_GET['period'] ) ) ) : '';
+		}
+
 		// Sanitize attributes.
-		$country      = sanitize_country( $atts['country'] );
-		$success_url  = esc_url( $atts['success_url'] );
-		$permalink    = get_permalink();
-		$cancel_url   = ! empty( $atts['cancel_url'] ) ? esc_url( $atts['cancel_url'] ) : esc_url( $permalink ? $permalink : home_url() );
-		$button_text  = esc_html( $atts['button_text'] );
-		$show_tiers   = filter_var( $atts['show_tiers'], FILTER_VALIDATE_BOOLEAN );
-		$default_tier = sanitize_tier( $atts['default_tier'] );
+		$country                = sanitize_country( $atts['country'] );
+		$success_url            = esc_url( $atts['success_url'] );
+		$permalink              = get_permalink();
+		$cancel_url             = ! empty( $atts['cancel_url'] ) ? esc_url( $atts['cancel_url'] ) : esc_url( $permalink ? $permalink : home_url() );
+		$button_text            = esc_html( $atts['button_text'] );
+		$show_tiers             = filter_var( $atts['show_tiers'], FILTER_VALIDATE_BOOLEAN );
+		$default_tier           = ! empty( $url_tier ) ? $url_tier : sanitize_tier( $atts['default_tier'] );
+		$default_billing_period = ! empty( $url_period ) ? $url_period : sanitize_billing_period( $atts['default_billing_period'] );
+		$default_users          = absint( $atts['default_users'] );
+		$show_period_toggle     = filter_var( $atts['show_period_toggle'], FILTER_VALIDATE_BOOLEAN );
+
+		// If tier is set via URL, hide tier selection.
+		if ( ! empty( $url_tier ) ) {
+			$show_tiers = false;
+		}
 
 		// Enqueue inline styles.
 		$this->enqueue_styles();
@@ -97,26 +119,39 @@ class Shortcode {
 				<?php endif; ?>
 
 				<!-- Billing Period -->
+				<?php if ( $show_period_toggle ) : ?>
+				<div class="nova-form-group">
+					<label class="nova-label">Billing Period</label>
+					<div class="switch-wrapper">
+						<input id="nova-quarterly" type="radio" name="billing_period" value="quarterly" <?php checked( $default_billing_period, 'quarterly' ); ?> <?php checked( empty( $default_billing_period ) ); ?> required>
+						<input id="nova-yearly" type="radio" name="billing_period" value="annual" <?php checked( $default_billing_period, 'annual' ); ?> required>
+						<label for="nova-quarterly">Quarterly</label>
+						<label for="nova-yearly">Yearly</label>
+						<span class="highlighter"></span>
+					</div>
+				</div>
+				<?php else : ?>
 				<div class="nova-form-group">
 					<label for="nova-billing-period" class="nova-label">Billing Period</label>
 					<select id="nova-billing-period" name="billing_period" class="nova-select" required>
 						<option value="">Select billing period...</option>
-						<option value="quarterly">Quarterly</option>
-						<option value="annual">Annual</option>
+						<option value="quarterly" <?php selected( $default_billing_period, 'quarterly' ); ?>>Quarterly</option>
+						<option value="annual" <?php selected( $default_billing_period, 'annual' ); ?>>Annual</option>
 					</select>
 				</div>
+				<?php endif; ?>
 
 				<!-- Number of Users -->
 				<div class="nova-form-group">
 					<label for="nova-users" class="nova-label">Number of Users</label>
-					<input 
-						type="number" 
-						id="nova-users" 
-						name="users" 
+					<input
+						type="number"
+						id="nova-users"
+						name="users"
 						class="nova-input"
-						min="1" 
-						max="1000" 
-						value="5" 
+						min="1"
+						max="1000"
+						value="<?php echo esc_attr( (string) $default_users ); ?>"
 						required
 					>
 					<small class="nova-help-text">Minimum 1 user, maximum 1000 users</small>
@@ -157,7 +192,17 @@ class Shortcode {
 				
 				// Get form values
 				const tier = form.querySelector('input[name="tier"]:checked')?.value || form.querySelector('input[name="tier"]')?.value;
-				const billingPeriod = form.querySelector('[name="billing_period"]').value;
+
+				// Get billing period from either toggle switch or dropdown
+				let billingPeriod = '';
+				const billingRadio = form.querySelector('input[name="billing_period"]:checked');
+				const billingSelect = form.querySelector('select[name="billing_period"]');
+				if (billingRadio) {
+					billingPeriod = billingRadio.value;
+				} else if (billingSelect) {
+					billingPeriod = billingSelect.value;
+				}
+
 				const users = parseInt(form.querySelector('[name="users"]').value);
 				const country = form.dataset.country;
 				const successUrl = form.dataset.successUrl;
@@ -342,6 +387,55 @@ class Shortcode {
 		.nova-submit-button:disabled {
 			background: #ccc;
 			cursor: not-allowed;
+		}
+
+		/* Toggle Switch Styles */
+		.switch-wrapper {
+			position: relative;
+			display: inline-flex;
+			align-items: center;
+			background: #f5f5f5;
+			border-radius: 50px;
+			padding: 4px;
+			gap: 0;
+		}
+		.switch-wrapper input[type="radio"] {
+			position: absolute;
+			opacity: 0;
+			pointer-events: none;
+		}
+		.switch-wrapper label {
+			position: relative;
+			z-index: 2;
+			padding: 10px 20px;
+			cursor: pointer;
+			transition: color 0.3s ease;
+			font-weight: 500;
+			font-size: 14px;
+			color: #666;
+			margin: 0;
+		}
+		.switch-wrapper input[type="radio"]:checked + label,
+		.switch-wrapper input[type="radio"]:checked ~ label:nth-of-type(2) {
+			color: #fff;
+		}
+		.switch-wrapper .highlighter {
+			position: absolute;
+			top: 4px;
+			left: 4px;
+			height: calc(100% - 8px);
+			border-radius: 50px;
+			background: #4CAF50;
+			transition: all 0.3s ease;
+			z-index: 1;
+		}
+		.switch-wrapper input[type="radio"]:first-of-type:checked ~ .highlighter {
+			width: calc(50% - 4px);
+			transform: translateX(0);
+		}
+		.switch-wrapper input[type="radio"]:nth-of-type(2):checked ~ .highlighter {
+			width: calc(50% - 4px);
+			transform: translateX(calc(100% + 8px));
 		}
 		</style>
 		<?php
