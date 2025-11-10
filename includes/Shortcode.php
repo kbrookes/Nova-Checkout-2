@@ -57,21 +57,27 @@ class Shortcode {
 		}
 
 		// Sanitize attributes.
-		$country                = sanitize_country( $atts['country'] );
-		$success_url            = esc_url( $atts['success_url'] );
-		$permalink              = get_permalink();
-		$cancel_url             = ! empty( $atts['cancel_url'] ) ? esc_url( $atts['cancel_url'] ) : esc_url( $permalink ? $permalink : home_url() );
+		$country   = sanitize_country( $atts['country'] );
+		$permalink = get_permalink();
+
+		// Ensure URLs are absolute for Stripe API validation.
+		$success_url = $atts['success_url'];
+		if ( ! preg_match( '/^https?:\/\//', $success_url ) ) {
+			$success_url = home_url( $success_url );
+		}
+		$success_url = esc_url( $success_url );
+
+		$cancel_url = ! empty( $atts['cancel_url'] ) ? $atts['cancel_url'] : ( $permalink ? $permalink : home_url() );
+		if ( ! preg_match( '/^https?:\/\//', $cancel_url ) ) {
+			$cancel_url = home_url( $cancel_url );
+		}
+		$cancel_url = esc_url( $cancel_url );
+
 		$button_text            = esc_html( $atts['button_text'] );
-		$show_tiers             = filter_var( $atts['show_tiers'], FILTER_VALIDATE_BOOLEAN );
 		$default_tier           = ! empty( $url_tier ) ? $url_tier : sanitize_tier( $atts['default_tier'] );
 		$default_billing_period = ! empty( $url_period ) ? $url_period : sanitize_billing_period( $atts['default_billing_period'] );
 		$default_users          = absint( $atts['default_users'] );
 		$show_period_toggle     = filter_var( $atts['show_period_toggle'], FILTER_VALIDATE_BOOLEAN );
-
-		// If tier is set via URL, hide tier selection.
-		if ( ! empty( $url_tier ) ) {
-			$show_tiers = false;
-		}
 
 		// Enqueue inline styles.
 		$this->enqueue_styles();
@@ -82,15 +88,14 @@ class Shortcode {
 		<div class="nova-checkout-form-wrapper">
 			<form class="nova-checkout-form" data-country="<?php echo esc_attr( $country ); ?>" data-success-url="<?php echo esc_attr( $success_url ); ?>" data-cancel-url="<?php echo esc_attr( $cancel_url ); ?>">
 				
-				<?php if ( $show_tiers ) : ?>
 				<!-- Tier Selection -->
 				<div class="nova-form-group">
 					<label class="nova-label">Select Your Plan</label>
-					
+
 					<label class="nova-tier-option" data-tier="standard">
 						<input type="radio" name="tier" value="standard" <?php checked( $default_tier, 'standard' ); ?> required>
 						<div class="nova-tier-content">
-							<strong>Standard</strong>
+							<strong>Act! Advantage Standard</strong>
 							<span class="nova-tier-badge nova-tier-standard">STANDARD</span>
 							<div class="nova-tier-description">Perfect for small teams getting started</div>
 						</div>
@@ -99,7 +104,7 @@ class Shortcode {
 					<label class="nova-tier-option" data-tier="professional">
 						<input type="radio" name="tier" value="professional" <?php checked( $default_tier, 'professional' ); ?> required>
 						<div class="nova-tier-content">
-							<strong>Professional</strong>
+							<strong>Act! Advantage Professional</strong>
 							<span class="nova-tier-badge nova-tier-professional">PROFESSIONAL</span>
 							<div class="nova-tier-description">For growing teams with advanced needs</div>
 						</div>
@@ -108,15 +113,12 @@ class Shortcode {
 					<label class="nova-tier-option" data-tier="ultimate">
 						<input type="radio" name="tier" value="ultimate" <?php checked( $default_tier, 'ultimate' ); ?> required>
 						<div class="nova-tier-content">
-							<strong>Ultimate</strong>
+							<strong>Act! Advantage Ultimate</strong>
 							<span class="nova-tier-badge nova-tier-ultimate">ULTIMATE</span>
 							<div class="nova-tier-description">Enterprise-grade features and support</div>
 						</div>
 					</label>
 				</div>
-				<?php else : ?>
-				<input type="hidden" name="tier" value="<?php echo esc_attr( $default_tier ); ?>">
-				<?php endif; ?>
 
 				<!-- Billing Period -->
 				<?php if ( $show_period_toggle ) : ?>
@@ -393,49 +395,54 @@ class Shortcode {
 		.switch-wrapper {
 			position: relative;
 			display: inline-flex;
-			align-items: center;
-			background: #f5f5f5;
-			border-radius: 50px;
 			padding: 4px;
-			gap: 0;
+			border-radius: 30px;
+			background: #fff;
+			box-shadow: 0 0 5px rgba(0,0,0,0.1);
 		}
-		.switch-wrapper input[type="radio"] {
+		.switch-wrapper [type="radio"] {
 			position: absolute;
-			opacity: 0;
-			pointer-events: none;
+			left: -9999px;
+		}
+		.switch-wrapper [type="radio"]:checked#nova-quarterly ~ label[for="nova-quarterly"],
+		.switch-wrapper [type="radio"]:checked#nova-yearly ~ label[for="nova-yearly"] {
+			color: #fff;
+		}
+		.switch-wrapper [type="radio"]:checked#nova-quarterly ~ label[for="nova-quarterly"]:hover,
+		.switch-wrapper [type="radio"]:checked#nova-yearly ~ label[for="nova-yearly"]:hover {
+			background: transparent;
+		}
+		.switch-wrapper [type="radio"]:checked#nova-quarterly + label[for="nova-yearly"] ~ .highlighter {
+			transform: none;
+		}
+		.switch-wrapper [type="radio"]:checked#nova-yearly + label[for="nova-quarterly"] ~ .highlighter {
+			transform: translateX(100%);
 		}
 		.switch-wrapper label {
-			position: relative;
-			z-index: 2;
-			padding: 10px 20px;
+			font-size: 16px;
+			font-weight: 600;
+			z-index: 1;
+			margin-bottom: 0;
+			min-width: 120px;
+			line-height: 32px;
 			cursor: pointer;
-			transition: color 0.3s ease;
-			font-weight: 500;
-			font-size: 14px;
-			color: #666;
-			margin: 0;
+			border-radius: 30px;
+			text-align: center;
+			text-transform: uppercase;
+			transition: all 0.25s ease-in-out;
 		}
-		.switch-wrapper input[type="radio"]:checked + label,
-		.switch-wrapper input[type="radio"]:checked ~ label:nth-of-type(2) {
-			color: #fff;
+		.switch-wrapper label:hover {
+			color: #4CAF50;
 		}
 		.switch-wrapper .highlighter {
 			position: absolute;
 			top: 4px;
 			left: 4px;
+			width: calc(50% - 4px);
 			height: calc(100% - 8px);
-			border-radius: 50px;
+			border-radius: 30px;
 			background: #4CAF50;
-			transition: all 0.3s ease;
-			z-index: 1;
-		}
-		.switch-wrapper input[type="radio"]:first-of-type:checked ~ .highlighter {
-			width: calc(50% - 4px);
-			transform: translateX(0);
-		}
-		.switch-wrapper input[type="radio"]:nth-of-type(2):checked ~ .highlighter {
-			width: calc(50% - 4px);
-			transform: translateX(calc(100% + 8px));
+			transition: transform 0.25s ease-in-out;
 		}
 		</style>
 		<?php
