@@ -1,0 +1,15 @@
+parameters:
+    level: 7
+    paths:
+        - nova-checkout.php
+        - includes
+    excludePaths:
+        - vendor
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    ignoreErrors:
+        # WordPress REST API generic types
+        - '#has parameter \$request with generic class WP_REST_Request but does not specify its types#'
+        # Stripe event object properties are dynamic
+        - '#Access to an undefined property Stripe\\StripeObject::\$object#'
+
