@@ -87,7 +87,30 @@ class Shortcode {
 		?>
 		<div class="nova-checkout-form-wrapper">
 			<form class="nova-checkout-form" data-country="<?php echo esc_attr( $country ); ?>" data-success-url="<?php echo esc_attr( $success_url ); ?>" data-cancel-url="<?php echo esc_attr( $cancel_url ); ?>">
-				
+
+				<!-- Billing Period -->
+				<?php if ( $show_period_toggle ) : ?>
+				<div class="nova-form-group">
+					<label class="nova-label">Billing Period</label>
+					<div class="switch-wrapper">
+						<input id="nova-quarterly" type="radio" name="billing_period" value="quarterly" <?php checked( $default_billing_period, 'quarterly' ); ?> <?php checked( empty( $default_billing_period ) ); ?> required>
+						<input id="nova-yearly" type="radio" name="billing_period" value="annual" <?php checked( $default_billing_period, 'annual' ); ?> required>
+						<label for="nova-quarterly">Quarterly</label>
+						<label for="nova-yearly">Yearly</label>
+						<span class="highlighter"></span>
+					</div>
+				</div>
+				<?php else : ?>
+				<div class="nova-form-group">
+					<label for="nova-billing-period" class="nova-label">Billing Period</label>
+					<select id="nova-billing-period" name="billing_period" class="nova-select" required>
+						<option value="">Select billing period...</option>
+						<option value="quarterly" <?php selected( $default_billing_period, 'quarterly' ); ?>>Quarterly</option>
+						<option value="annual" <?php selected( $default_billing_period, 'annual' ); ?>>Annual</option>
+					</select>
+				</div>
+				<?php endif; ?>
+
 				<!-- Tier Selection -->
 				<div class="nova-form-group">
 					<label class="nova-label">Select Your Plan</label>
@@ -119,29 +142,6 @@ class Shortcode {
 						</div>
 					</label>
 				</div>
-
-				<!-- Billing Period -->
-				<?php if ( $show_period_toggle ) : ?>
-				<div class="nova-form-group">
-					<label class="nova-label">Billing Period</label>
-					<div class="switch-wrapper">
-						<input id="nova-quarterly" type="radio" name="billing_period" value="quarterly" <?php checked( $default_billing_period, 'quarterly' ); ?> <?php checked( empty( $default_billing_period ) ); ?> required>
-						<input id="nova-yearly" type="radio" name="billing_period" value="annual" <?php checked( $default_billing_period, 'annual' ); ?> required>
-						<label for="nova-quarterly">Quarterly</label>
-						<label for="nova-yearly">Yearly</label>
-						<span class="highlighter"></span>
-					</div>
-				</div>
-				<?php else : ?>
-				<div class="nova-form-group">
-					<label for="nova-billing-period" class="nova-label">Billing Period</label>
-					<select id="nova-billing-period" name="billing_period" class="nova-select" required>
-						<option value="">Select billing period...</option>
-						<option value="quarterly" <?php selected( $default_billing_period, 'quarterly' ); ?>>Quarterly</option>
-						<option value="annual" <?php selected( $default_billing_period, 'annual' ); ?>>Annual</option>
-					</select>
-				</div>
-				<?php endif; ?>
 
 				<!-- Number of Users -->
 				<div class="nova-form-group">
@@ -317,14 +317,7 @@ class Shortcode {
 			margin-bottom: 10px;
 			cursor: pointer;
 			transition: all 0.2s;
-		}
-		.nova-tier-option:hover {
-			border-color: #4CAF50;
-			background: #f9f9f9;
-		}
-		.nova-tier-option.selected {
-			border-color: #4CAF50;
-			background: #f0f8f0;
+			background: #fff;
 		}
 		.nova-tier-option input[type="radio"] {
 			margin-right: 10px;
@@ -333,6 +326,10 @@ class Shortcode {
 			display: inline-block;
 			width: calc(100% - 30px);
 		}
+		.nova-tier-content strong {
+			color: var(--primary);
+			transition: color 0.2s;
+		}
 		.nova-tier-badge {
 			display: inline-block;
 			padding: 4px 12px;
@@ -340,23 +337,35 @@ class Shortcode {
 			font-size: 12px;
 			font-weight: 600;
 			margin-left: 10px;
-		}
-		.nova-tier-standard {
-			background: #2196F3;
 			color: white;
+			transition: all 0.2s;
 		}
-		.nova-tier-professional {
-			background: #9C27B0;
-			color: white;
+		/* Unselected tier badges */
+		.nova-tier-option .nova-tier-badge {
+			background: var(--primary);
 		}
-		.nova-tier-ultimate {
-			background: #FF9800;
-			color: white;
+		.nova-tier-option[data-tier="professional"] .nova-tier-badge {
+			background: var(--warning);
 		}
 		.nova-tier-description {
 			margin-top: 8px;
 			color: #666;
 			font-size: 14px;
+			transition: color 0.2s;
+		}
+		/* Selected tier styling */
+		.nova-tier-option.selected {
+			background: var(--primary);
+			border-color: var(--primary);
+		}
+		.nova-tier-option.selected .nova-tier-content strong {
+			color: var(--white);
+		}
+		.nova-tier-option.selected .nova-tier-badge {
+			background: var(--warning);
+		}
+		.nova-tier-option.selected .nova-tier-description {
+			color: var(--white);
 		}
 		.nova-help-text {
 			display: block;
