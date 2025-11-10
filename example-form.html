@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Checkout Example Form</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .checkout-form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .tier-option {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tier-option:hover {
+            border-color: #4CAF50;
+            background: #f9f9f9;
+        }
+        .tier-option input[type="radio"] {
+            margin-right: 10px;
+        }
+        .tier-option.selected {
+            border-color: #4CAF50;
+            background: #f0f8f0;
+        }
+        .tier-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .tier-badge.standard {
+            background: #2196F3;
+            color: white;
+        }
+        .tier-badge.professional {
+            background: #9C27B0;
+            color: white;
+        }
+        .tier-badge.ultimate {
+            background: #FF9800;
+            color: white;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .price-preview {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .price-preview strong {
+            font-size: 24px;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="checkout-form">
+        <h2>🚀 Subscribe to Nova</h2>
+        
+        <div class="error" id="error-message"></div>
+
+        <form id="nova-checkout-form">
+            <!-- Tier Selection -->
+            <div class="form-group">
+                <label>Select Your Plan</label>
+                
+                <label class="tier-option" data-tier="standard">
+                    <input type="radio" name="tier" value="standard" required>
+                    <strong>Standard</strong>
+                    <span class="tier-badge standard">STANDARD</span>
+                    <div style="margin-top: 8px; color: #666; font-size: 14px;">
+                        Perfect for small teams getting started
+                    </div>
+                </label>
+
+                <label class="tier-option" data-tier="professional">
+                    <input type="radio" name="tier" value="professional" required>
+                    <strong>Professional</strong>
+                    <span class="tier-badge professional">PROFESSIONAL</span>
+                    <div style="margin-top: 8px; color: #666; font-size: 14px;">
+                        For growing teams with advanced needs
+                    </div>
+                </label>
+
+                <label class="tier-option" data-tier="ultimate">
+                    <input type="radio" name="tier" value="ultimate" required>
+                    <strong>Ultimate</strong>
+                    <span class="tier-badge ultimate">ULTIMATE</span>
+                    <div style="margin-top: 8px; color: #666; font-size: 14px;">
+                        Enterprise-grade features and support
+                    </div>
+                </label>
+            </div>
+
+            <!-- Billing Period -->
+            <div class="form-group">
+                <label for="billing_period">Billing Period</label>
+                <select id="billing_period" name="billing_period" required>
+                    <option value="">Select billing period...</option>
+                    <option value="quarterly">Quarterly (Save 10%)</option>
+                    <option value="annual">Annual (Save 20%)</option>
+                </select>
+            </div>
+
+            <!-- Number of Users -->
+            <div class="form-group">
+                <label for="users">Number of Users</label>
+                <input 
+                    type="number" 
+                    id="users" 
+                    name="users" 
+                    min="1" 
+                    max="1000" 
+                    value="5" 
+                    required
+                >
+                <small style="color: #666;">Minimum 1 user, maximum 1000 users</small>
+            </div>
+
+            <!-- Price Preview (optional) -->
+            <div class="price-preview" id="price-preview" style="display: none;">
+                <div>Total: <strong id="total-price">$0</strong></div>
+                <div style="margin-top: 5px; color: #666;">
+                    <span id="price-breakdown"></span>
+                </div>
+            </div>
+
+            <button type="submit" id="checkout-button">
+                Continue to Checkout →
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Tier selection visual feedback
+        document.querySelectorAll('.tier-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.tier-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                this.querySelector('input[type="radio"]').checked = true;
+            });
+        });
+
+        // Form submission
+        document.getElementById('nova-checkout-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('checkout-button');
+            const errorDiv = document.getElementById('error-message');
+            
+            // Get form values
+            const tier = document.querySelector('input[name="tier"]:checked')?.value;
+            const billingPeriod = document.getElementById('billing_period').value;
+            const users = parseInt(document.getElementById('users').value);
+            
+            // Validate
+            if (!tier || !billingPeriod || !users) {
+                showError('Please fill in all fields');
+                return;
+            }
+            
+            // Disable button
+            button.disabled = true;
+            button.textContent = 'Creating checkout session...';
+            errorDiv.style.display = 'none';
+            
+            try {
+                // Call the Nova Checkout API
+                const response = await fetch('/wp-json/nova/v1/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        country: 'au',  // Change to 'nz' for New Zealand
+                        tier: tier,
+                        billing_period: billingPeriod,
+                        users: users,
+                        success_url: window.location.origin + '/checkout-success/',
+                        cancel_url: window.location.href
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to create checkout session');
+                }
+                
+                // Redirect to Stripe Checkout
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error('No checkout URL returned');
+                }
+                
+            } catch (error) {
+                console.error('Checkout error:', error);
+                showError(error.message || 'An error occurred. Please try again.');
+                button.disabled = false;
+                button.textContent = 'Continue to Checkout →';
+            }
+        });
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+

@@ -116,6 +116,13 @@ class Plugin {
 	private ?Webhooks $webhooks = null;
 
 	/**
+	 * Shortcode instance.
+	 *
+	 * @var Shortcode|null
+	 */
+	private ?Shortcode $shortcode = null;
+
+	/**
 	 * Get plugin instance.
 	 *
 	 * @return Plugin
@@ -141,10 +148,12 @@ class Plugin {
 	 */
 	private function init(): void {
 		// Initialize components.
-		$this->settings = new Settings();
-		$this->prices   = new Prices();
-		$this->rest     = new REST();
-		$this->webhooks = new Webhooks();
+		$this->settings  = new Settings();
+		$this->prices    = new Prices();
+		$this->rest      = new REST();
+		$this->webhooks  = new Webhooks();
+		$this->shortcode = Shortcode::get_instance();
+		$this->shortcode->init();
 
 		// Register hooks.
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
