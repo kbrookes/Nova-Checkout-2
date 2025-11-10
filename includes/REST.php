@@ -234,9 +234,9 @@ class REST {
 
 			return new \WP_REST_Response(
 				array(
-					'success'     => true,
-					'session_id'  => $session->id,
-					'session_url' => $session->url,
+					'success'    => true,
+					'session_id' => $session->id,
+					'url'        => $session->url,
 				),
 				200
 			);
