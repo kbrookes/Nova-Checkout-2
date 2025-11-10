@@ -176,6 +176,17 @@ class Shortcode {
 
 			// Tier selection visual feedback
 			const tierOptions = form.querySelectorAll('.nova-tier-option');
+
+			// Set initial selected state based on checked radio
+			const checkedTier = form.querySelector('input[name="tier"]:checked');
+			if (checkedTier) {
+				const selectedOption = checkedTier.closest('.nova-tier-option');
+				if (selectedOption) {
+					selectedOption.classList.add('selected');
+				}
+			}
+
+			// Handle tier selection clicks
 			tierOptions.forEach(option => {
 				option.addEventListener('click', function() {
 					tierOptions.forEach(opt => opt.classList.remove('selected'));
