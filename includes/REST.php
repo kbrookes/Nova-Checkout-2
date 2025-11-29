@@ -110,6 +110,22 @@ class REST {
 				},
 				'description'       => __( 'URL to redirect to if checkout is cancelled', 'nova-checkout' ),
 			),
+			'support_level'  => array(
+				'required'          => false,
+				'type'              => 'string',
+				'default'           => 'self-service',
+				'sanitize_callback' => function ( $value ) {
+					$value = strtolower( trim( $value ) );
+					// Convert hyphenated to underscore for consistency.
+					$value = str_replace( '-', '_', $value );
+					return $value;
+				},
+				'validate_callback' => function ( $value ) {
+					$value = strtolower( trim( str_replace( '-', '_', $value ) ) );
+					return in_array( $value, array( 'self_service', 'phone_standard', 'phone_professional', 'trainer', 'coach', 'specialist' ), true );
+				},
+				'description'       => __( 'Support level (self-service, phone-standard, phone-professional, trainer, coach, specialist)', 'nova-checkout' ),
+			),
 			'customer_email' => array(
 				'required'          => false,
 				'type'              => 'string',
@@ -157,6 +173,7 @@ class REST {
 	 *   "tier": "professional",
 	 *   "billing_period": "quarterly",
 	 *   "users": 5,
+	 *   "support_level": "trainer",
 	 *   "success_url": "https://example.com/success",
 	 *   "cancel_url": "https://example.com/cancel",
 	 *   "customer_email": "customer@example.com",
@@ -172,6 +189,7 @@ class REST {
 		$tier           = $request->get_param( 'tier' );
 		$billing_period = $request->get_param( 'billing_period' );
 		$users          = $request->get_param( 'users' );
+		$support_level  = $request->get_param( 'support_level' ) ?? 'self_service';
 		$success_url    = $request->get_param( 'success_url' );
 		$cancel_url     = $request->get_param( 'cancel_url' );
 		$customer_email = $request->get_param( 'customer_email' );
@@ -197,26 +215,52 @@ class REST {
 			);
 		}
 
+		// Build line items array starting with the product.
+		$line_items = array(
+			array(
+				'price'    => $price_id,
+				'quantity' => $users,
+			),
+		);
+
+		// Add support line item if not self-service.
+		if ( 'self_service' !== $support_level ) {
+			$support_price_id = get_support_price_id( $country, $support_level, $billing_period );
+			if ( empty( $support_price_id ) ) {
+				log_message( "Missing support price ID for {$country} {$support_level} {$billing_period}", 'error' );
+				return create_error_response(
+					__( 'Configuration error. Please contact support.', 'nova-checkout' ),
+					500
+				);
+			}
+
+			// Determine if support is per-user or flat-rate.
+			$is_per_user      = in_array( $support_level, array( 'phone_standard', 'phone_professional' ), true );
+			$support_quantity = $is_per_user ? $users : 1;
+
+			$line_items[] = array(
+				'price'    => $support_price_id,
+				'quantity' => $support_quantity,
+			);
+		}
+
 		// Set Stripe API key.
 		Stripe::setApiKey( $secret_key );
 
 		// Prepare session parameters.
 		$session_params = array(
 			'mode'        => 'subscription',
-			'line_items'  => array(
-				array(
-					'price'    => $price_id,
-					'quantity' => $users,
-				),
-			),
+			'line_items'  => $line_items,
 			'success_url' => $success_url,
 			'cancel_url'  => $cancel_url,
 			'metadata'    => array_merge(
 				$metadata,
 				array(
 					'country'        => $country,
+					'tier'           => $tier,
 					'billing_period' => $billing_period,
 					'users'          => (string) $users,
+					'support_level'  => $support_level,
 				)
 			),
 		);

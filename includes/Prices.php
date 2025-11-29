@@ -19,6 +19,13 @@ class Prices {
 	private const OPTION_NAME = 'nova_checkout_prices';
 
 	/**
+	 * Support prices option name.
+	 *
+	 * @var string
+	 */
+	private const SUPPORT_OPTION_NAME = 'nova_checkout_support_prices';
+
+	/**
 	 * Settings page slug.
 	 *
 	 * @var string
@@ -78,11 +85,23 @@ class Prices {
 			'jquery',
 			"
 			jQuery(document).ready(function($) {
+				// Handle main section tabs (Product/Support)
+				$('.nav-tab-wrapper a').on('click', function(e) {
+					e.preventDefault();
+					var target = $(this).attr('href').substring(1);
+					$('.nav-tab-wrapper a').removeClass('nav-tab-active');
+					$(this).addClass('nav-tab-active');
+					$('.nova-section-content').hide();
+					$('#' + target).show();
+				});
+
+				// Handle country tabs within sections
 				$('.nova-prices-tabs button').on('click', function() {
 					var tab = $(this).data('tab');
-					$('.nova-prices-tabs button').removeClass('active');
+					var parent = $(this).closest('.nova-section-content');
+					parent.find('.nova-prices-tabs button').removeClass('active');
 					$(this).addClass('active');
-					$('.nova-prices-tab-content').removeClass('active');
+					parent.find('.nova-prices-tab-content').removeClass('active');
 					$('#' + tab).addClass('active');
 				});
 			});
@@ -119,6 +138,16 @@ class Prices {
 				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_prices' ),
 				'default'           => $this->get_default_prices(),
+			)
+		);
+
+		register_setting(
+			self::PAGE_SLUG,
+			self::SUPPORT_OPTION_NAME,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_support_prices' ),
+				'default'           => $this->get_default_support_prices(),
 			)
 		);
 	}
@@ -248,6 +277,150 @@ class Prices {
 	}
 
 	/**
+	 * Get default support prices structure.
+	 *
+	 * @return array<string, array<string, array<string, string>>>
+	 */
+	private function get_default_support_prices(): array {
+		return array(
+			'au' => array(
+				'phone_standard'     => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+				'phone_professional' => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+				'trainer'            => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+				'coach'              => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+				'specialist'         => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+			),
+			'nz' => array(
+				'phone_standard'     => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+				'phone_professional' => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+				'trainer'            => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+				'coach'              => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+				'specialist'         => array(
+					'quarterly' => '',
+					'annual'    => '',
+				),
+			),
+		);
+	}
+
+	/**
+	 * Sanitize support prices before saving.
+	 *
+	 * @param mixed $input The input to sanitize.
+	 * @return array<string, array<string, array<string, string>>> The sanitized support prices.
+	 */
+	public function sanitize_support_prices( $input ): array {
+		if ( ! is_array( $input ) ) {
+			return $this->get_default_support_prices();
+		}
+
+		$sanitized = $this->get_default_support_prices();
+
+		// Sanitize each support price ID.
+		foreach ( array( 'au', 'nz' ) as $country ) {
+			foreach ( array( 'phone_standard', 'phone_professional', 'trainer', 'coach', 'specialist' ) as $support_tier ) {
+				foreach ( array( 'quarterly', 'annual' ) as $period ) {
+					$value = $input[ $country ][ $support_tier ][ $period ] ?? '';
+					$sanitized[ $country ][ $support_tier ][ $period ] = $this->sanitize_support_price_id( $value, $country, $support_tier, $period );
+				}
+			}
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Sanitize a support price ID.
+	 *
+	 * @param mixed  $value        The value to sanitize.
+	 * @param string $country      The country code.
+	 * @param string $support_tier The support tier.
+	 * @param string $period       The billing period.
+	 * @return string The sanitized price ID.
+	 */
+	private function sanitize_support_price_id( $value, string $country, string $support_tier, string $period ): string {
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
+
+		$value = trim( $value );
+
+		if ( empty( $value ) ) {
+			return '';
+		}
+
+		if ( ! is_valid_price_id( $value ) ) {
+			add_settings_error(
+				self::SUPPORT_OPTION_NAME,
+				'invalid_support_price_id',
+				sprintf(
+					/* translators: 1: country code, 2: support tier, 3: billing period */
+					__( 'Invalid Stripe price ID format for %1$s %2$s %3$s support. Must start with price_.', 'nova-checkout' ),
+					strtoupper( $country ),
+					ucfirst( str_replace( '_', ' ', $support_tier ) ),
+					$period
+				),
+				'error'
+			);
+			return '';
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Get a support price ID for a specific country, support tier, and billing period.
+	 *
+	 * @param string $country      The country code (au or nz).
+	 * @param string $support_tier The support tier (phone_standard, phone_professional, trainer, coach, specialist).
+	 * @param string $period       The billing period (quarterly or annual).
+	 * @return string The price ID, or empty string if not found.
+	 */
+	public function get_support_price_id( string $country, string $support_tier, string $period ): string {
+		$country = sanitize_country( $country );
+		$period  = sanitize_billing_period( $period );
+
+		$valid_support_tiers = array( 'phone_standard', 'phone_professional', 'trainer', 'coach', 'specialist' );
+		if ( ! in_array( $support_tier, $valid_support_tiers, true ) ) {
+			return '';
+		}
+
+		if ( empty( $country ) || empty( $period ) ) {
+			return '';
+		}
+
+		$prices = get_option( self::SUPPORT_OPTION_NAME, $this->get_default_support_prices() );
+		return $prices[ $country ][ $support_tier ][ $period ] ?? '';
+	}
+
+	/**
 	 * Render the settings page.
 	 *
 	 * @return void
@@ -257,7 +430,8 @@ class Prices {
 			return;
 		}
 
-		$prices = get_option( self::OPTION_NAME, $this->get_default_prices() );
+		$prices         = get_option( self::OPTION_NAME, $this->get_default_prices() );
+		$support_prices = get_option( self::SUPPORT_OPTION_NAME, $this->get_default_support_prices() );
 
 		?>
 		<div class="wrap">
@@ -275,23 +449,49 @@ class Prices {
 					<a href="https://dashboard.stripe.com/products" target="_blank" class="nova-stripe-link">
 						<?php esc_html_e( '→ Open Stripe Dashboard to create prices', 'nova-checkout' ); ?>
 					</a>
+					&nbsp;|&nbsp;
+					<a href="<?php echo esc_url( plugin_dir_url( __DIR__ ) . 'SUPPORT-OPTIONS-SETUP.md' ); ?>" target="_blank" class="nova-stripe-link">
+						<?php esc_html_e( '→ Support Options Setup Guide', 'nova-checkout' ); ?>
+					</a>
 				</p>
 			</div>
 
 			<form action="options.php" method="post">
 				<?php settings_fields( self::PAGE_SLUG ); ?>
 
-				<div class="nova-prices-tabs">
-					<button type="button" class="active" data-tab="tab-au"><?php esc_html_e( '🇦🇺 Australia', 'nova-checkout' ); ?></button>
-					<button type="button" data-tab="tab-nz"><?php esc_html_e( '🇳🇿 New Zealand', 'nova-checkout' ); ?></button>
+				<h2 class="nav-tab-wrapper">
+					<a href="#product-prices" class="nav-tab nav-tab-active"><?php esc_html_e( 'Product Prices', 'nova-checkout' ); ?></a>
+					<a href="#support-prices" class="nav-tab"><?php esc_html_e( 'Support Prices', 'nova-checkout' ); ?></a>
+				</h2>
+
+				<div id="product-prices" class="nova-section-content">
+					<div class="nova-prices-tabs">
+						<button type="button" class="active" data-tab="tab-product-au"><?php esc_html_e( '🇦🇺 Australia', 'nova-checkout' ); ?></button>
+						<button type="button" data-tab="tab-product-nz"><?php esc_html_e( '🇳🇿 New Zealand', 'nova-checkout' ); ?></button>
+					</div>
+
+					<div id="tab-product-au" class="nova-prices-tab-content active">
+						<?php $this->render_prices_table( 'au', $prices ); ?>
+					</div>
+
+					<div id="tab-product-nz" class="nova-prices-tab-content">
+						<?php $this->render_prices_table( 'nz', $prices ); ?>
+					</div>
 				</div>
 
-				<div id="tab-au" class="nova-prices-tab-content active">
-					<?php $this->render_prices_table( 'au', $prices ); ?>
-				</div>
+				<div id="support-prices" class="nova-section-content" style="display: none;">
+					<div class="nova-prices-tabs">
+						<button type="button" class="active" data-tab="tab-support-au"><?php esc_html_e( '🇦🇺 Australia', 'nova-checkout' ); ?></button>
+						<button type="button" data-tab="tab-support-nz"><?php esc_html_e( '🇳🇿 New Zealand', 'nova-checkout' ); ?></button>
+					</div>
 
-				<div id="tab-nz" class="nova-prices-tab-content">
-					<?php $this->render_prices_table( 'nz', $prices ); ?>
+					<div id="tab-support-au" class="nova-prices-tab-content active">
+						<?php $this->render_support_prices_table( 'au', $support_prices ); ?>
+					</div>
+
+					<div id="tab-support-nz" class="nova-prices-tab-content">
+						<?php $this->render_support_prices_table( 'nz', $support_prices ); ?>
+					</div>
 				</div>
 
 				<?php submit_button( __( 'Save Price IDs', 'nova-checkout' ) ); ?>
@@ -379,6 +579,104 @@ class Prices {
 			printf(
 				/* translators: %s: country name */
 				esc_html__( 'Enter Stripe price IDs for %s subscriptions. Price IDs start with "price_" and can be found in your Stripe Dashboard.', 'nova-checkout' ),
+				esc_html( $country_name )
+			);
+			?>
+			<br>
+			<a href="https://dashboard.stripe.com/products" target="_blank" class="nova-stripe-link">
+				<?php esc_html_e( 'View prices in Stripe Dashboard →', 'nova-checkout' ); ?>
+			</a>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render support prices table for a specific country.
+	 *
+	 * @param string               $country        The country code (au or nz).
+	 * @param array<string, mixed> $support_prices The support prices array.
+	 * @return void
+	 */
+	private function render_support_prices_table( string $country, array $support_prices ): void {
+		$country_name  = 'au' === $country ? __( 'Australia', 'nova-checkout' ) : __( 'New Zealand', 'nova-checkout' );
+		$support_tiers = array(
+			'phone_standard'     => array(
+				'label' => __( 'Phone (Standard)', 'nova-checkout' ),
+				'class' => 'nova-tier-standard',
+			),
+			'phone_professional' => array(
+				'label' => __( 'Phone (Professional)', 'nova-checkout' ),
+				'class' => 'nova-tier-professional',
+			),
+			'trainer'            => array(
+				'label' => __( 'Trainer', 'nova-checkout' ),
+				'class' => 'nova-tier-professional',
+			),
+			'coach'              => array(
+				'label' => __( 'Coach', 'nova-checkout' ),
+				'class' => 'nova-tier-ultimate',
+			),
+			'specialist'         => array(
+				'label' => __( 'Specialist', 'nova-checkout' ),
+				'class' => 'nova-tier-ultimate',
+			),
+		);
+
+		?>
+		<table class="nova-prices-table">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Support Tier', 'nova-checkout' ); ?></th>
+					<th><?php esc_html_e( 'Quarterly Price ID', 'nova-checkout' ); ?></th>
+					<th><?php esc_html_e( 'Annual Price ID', 'nova-checkout' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $support_tiers as $tier_key => $tier_data ) : ?>
+					<?php
+					$quarterly_value = $support_prices[ $country ][ $tier_key ]['quarterly'] ?? '';
+					$annual_value    = $support_prices[ $country ][ $tier_key ]['annual'] ?? '';
+					?>
+					<tr>
+						<td>
+							<span class="nova-tier-badge <?php echo esc_attr( $tier_data['class'] ); ?>">
+								<?php echo esc_html( $tier_data['label'] ); ?>
+							</span>
+						</td>
+						<td>
+							<input
+								type="text"
+								name="<?php echo esc_attr( self::SUPPORT_OPTION_NAME ); ?>[<?php echo esc_attr( $country ); ?>][<?php echo esc_attr( $tier_key ); ?>][quarterly]"
+								value="<?php echo esc_attr( $quarterly_value ); ?>"
+								placeholder="price_..."
+								class="regular-text"
+							/>
+							<span class="nova-price-status <?php echo ! empty( $quarterly_value ) ? 'configured' : 'empty'; ?>">
+								<?php echo ! empty( $quarterly_value ) ? '✓' : '○'; ?>
+							</span>
+						</td>
+						<td>
+							<input
+								type="text"
+								name="<?php echo esc_attr( self::SUPPORT_OPTION_NAME ); ?>[<?php echo esc_attr( $country ); ?>][<?php echo esc_attr( $tier_key ); ?>][annual]"
+								value="<?php echo esc_attr( $annual_value ); ?>"
+								placeholder="price_..."
+								class="regular-text"
+							/>
+							<span class="nova-price-status <?php echo ! empty( $annual_value ) ? 'configured' : 'empty'; ?>">
+								<?php echo ! empty( $annual_value ) ? '✓' : '○'; ?>
+							</span>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: country name */
+				esc_html__( 'Enter Stripe price IDs for %s support subscriptions. See the Support Options Setup Guide for pricing details.', 'nova-checkout' ),
 				esc_html( $country_name )
 			);
 			?>

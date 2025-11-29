@@ -143,6 +143,70 @@ class Shortcode {
 					</label>
 				</div>
 
+				<!-- Support Level Selection -->
+				<div class="nova-form-group">
+					<label class="nova-label">Select Support Level</label>
+
+					<label class="nova-support-option" data-support="self-service">
+						<input type="radio" name="support_level" value="self-service" checked required>
+						<div class="nova-support-content">
+							<strong>Self-Service</strong>
+							<span class="nova-support-badge nova-support-free">INCLUDED</span>
+							<div class="nova-support-description">Access to knowledge base and community forums</div>
+						</div>
+					</label>
+
+					<label class="nova-support-option" data-support="phone-standard" data-per-user="true" data-monthly-cost-au="18" data-monthly-cost-nz="20" data-max-users="2" data-tier="standard">
+						<input type="radio" name="support_level" value="phone-standard" required>
+						<div class="nova-support-content">
+							<strong>Support + Phone (Standard)</strong>
+							<span class="nova-support-badge nova-support-phone">PHONE</span>
+							<div class="nova-support-description">Email + phone support during business hours</div>
+							<div class="nova-support-pricing"></div>
+						</div>
+					</label>
+
+					<label class="nova-support-option" data-support="phone-professional" data-per-user="true" data-monthly-cost-au="9" data-monthly-cost-nz="10" data-max-users="5" data-tier="professional">
+						<input type="radio" name="support_level" value="phone-professional" required>
+						<div class="nova-support-content">
+							<strong>Support + Phone (Professional)</strong>
+							<span class="nova-support-badge nova-support-phone">PHONE</span>
+							<div class="nova-support-description">Email + phone support during business hours</div>
+							<div class="nova-support-pricing"></div>
+						</div>
+					</label>
+
+					<label class="nova-support-option" data-support="trainer" data-per-user="false" data-monthly-cost-au="49" data-monthly-cost-nz="55">
+						<input type="radio" name="support_level" value="trainer" required>
+						<div class="nova-support-content">
+							<strong>Support + Trainer</strong>
+							<span class="nova-support-badge nova-support-trainer">TRAINER</span>
+							<div class="nova-support-description">Phone support + dedicated trainer for onboarding</div>
+							<div class="nova-support-pricing"></div>
+						</div>
+					</label>
+
+					<label class="nova-support-option" data-support="coach" data-per-user="false" data-monthly-cost-au="74" data-monthly-cost-nz="83">
+						<input type="radio" name="support_level" value="coach" required>
+						<div class="nova-support-content">
+							<strong>Support + Coach</strong>
+							<span class="nova-support-badge nova-support-coach">COACH</span>
+							<div class="nova-support-description">Trainer + ongoing coaching and best practices</div>
+							<div class="nova-support-pricing"></div>
+						</div>
+					</label>
+
+					<label class="nova-support-option" data-support="specialist" data-per-user="false" data-monthly-cost-au="99" data-monthly-cost-nz="110">
+						<input type="radio" name="support_level" value="specialist" required>
+						<div class="nova-support-content">
+							<strong>Support + Specialist</strong>
+							<span class="nova-support-badge nova-support-specialist">SPECIALIST</span>
+							<div class="nova-support-description">Coach + dedicated specialist for advanced needs</div>
+							<div class="nova-support-pricing"></div>
+						</div>
+					</label>
+				</div>
+
 				<!-- Number of Users -->
 				<div class="nova-form-group">
 					<label for="nova-users" class="nova-label">Number of Users</label>
@@ -174,8 +238,11 @@ class Shortcode {
 			const form = document.querySelector('.nova-checkout-form');
 			if (!form) return;
 
+			const country = form.dataset.country;
+
 			// Tier selection visual feedback
 			const tierOptions = form.querySelectorAll('.nova-tier-option');
+			const supportOptions = form.querySelectorAll('.nova-support-option');
 
 			// Set initial selected state based on checked radio
 			const checkedTier = form.querySelector('input[name="tier"]:checked');
@@ -192,19 +259,119 @@ class Shortcode {
 					tierOptions.forEach(opt => opt.classList.remove('selected'));
 					this.classList.add('selected');
 					this.querySelector('input[type="radio"]').checked = true;
+					updateSupportOptions();
 				});
 			});
+
+			// Handle support selection clicks
+			supportOptions.forEach(option => {
+				option.addEventListener('click', function() {
+					if (this.style.display === 'none' || this.classList.contains('disabled')) {
+						return;
+					}
+					supportOptions.forEach(opt => opt.classList.remove('selected'));
+					this.classList.add('selected');
+					this.querySelector('input[type="radio"]').checked = true;
+				});
+			});
+
+			// Update support options based on tier and user count
+			function updateSupportOptions() {
+				const tier = form.querySelector('input[name="tier"]:checked')?.value;
+				const users = parseInt(form.querySelector('[name="users"]').value) || 1;
+
+				supportOptions.forEach(option => {
+					const supportLevel = option.dataset.support;
+					const isPerUser = option.dataset.perUser === 'true';
+					const maxUsers = parseInt(option.dataset.maxUsers) || Infinity;
+					const requiredTier = option.dataset.tier;
+					const monthlyCostKey = 'monthlyCost' + (country === 'au' ? 'Au' : 'Nz');
+					const monthlyCost = parseFloat(option.dataset[monthlyCostKey]) || 0;
+
+					let shouldHide = false;
+					let reason = '';
+
+					// Self-service is always available
+					if (supportLevel === 'self-service') {
+						option.style.display = 'block';
+						option.classList.remove('disabled');
+						return;
+					}
+
+					// Check tier restrictions
+					if (requiredTier && tier !== requiredTier) {
+						shouldHide = true;
+						reason = 'Not available for ' + tier + ' tier';
+					}
+
+					// Check user count restrictions for per-user support
+					if (isPerUser && users > maxUsers) {
+						shouldHide = true;
+						reason = 'Not available for more than ' + maxUsers + ' users';
+					}
+
+					// Hide phone support for Ultimate tier
+					if (tier === 'ultimate' && supportLevel.startsWith('phone-')) {
+						shouldHide = true;
+						reason = 'Not available for Ultimate tier';
+					}
+
+					// Calculate and compare costs for per-user options
+					if (isPerUser && !shouldHide) {
+						const perUserTotal = monthlyCost * users;
+
+						// Check if trainer is cheaper
+						const trainerOption = form.querySelector('[data-support="trainer"]');
+						const trainerCost = parseFloat(trainerOption?.dataset[monthlyCostKey]) || 0;
+
+						if (perUserTotal >= trainerCost) {
+							shouldHide = true;
+							reason = 'Trainer option is more cost-effective';
+						}
+					}
+
+					if (shouldHide) {
+						option.style.display = 'none';
+						option.classList.add('disabled');
+						// If this option was selected, reset to self-service
+						if (option.querySelector('input[type="radio"]').checked) {
+							form.querySelector('[data-support="self-service"] input[type="radio"]').checked = true;
+						}
+					} else {
+						option.style.display = 'block';
+						option.classList.remove('disabled');
+
+						// Update pricing display
+						const pricingDiv = option.querySelector('.nova-support-pricing');
+						if (pricingDiv) {
+							if (isPerUser) {
+								const total = monthlyCost * users;
+								pricingDiv.textContent = '$' + monthlyCost + ' × ' + users + ' users = $' + total + '/month';
+							} else {
+								pricingDiv.textContent = '$' + monthlyCost + '/month';
+							}
+						}
+					}
+				});
+			}
+
+			// Listen for user count changes
+			form.querySelector('[name="users"]').addEventListener('input', updateSupportOptions);
+
+			// Initial update
+			updateSupportOptions();
 
 			// Form submission
 			form.addEventListener('submit', async function(e) {
 				e.preventDefault();
-				
+
 				const button = form.querySelector('.nova-submit-button');
 				const errorDiv = form.querySelector('.nova-error');
 				const originalButtonText = button.textContent;
-				
+
 				// Get form values
 				const tier = form.querySelector('input[name="tier"]:checked')?.value || form.querySelector('input[name="tier"]')?.value;
+				const supportLevel = form.querySelector('input[name="support_level"]:checked')?.value || 'self-service';
 
 				// Get billing period from either toggle switch or dropdown
 				let billingPeriod = '';
@@ -220,18 +387,18 @@ class Shortcode {
 				const country = form.dataset.country;
 				const successUrl = form.dataset.successUrl;
 				const cancelUrl = form.dataset.cancelUrl;
-				
+
 				// Validate
-				if (!tier || !billingPeriod || !users) {
+				if (!tier || !billingPeriod || !users || !supportLevel) {
 					showError('Please fill in all fields');
 					return;
 				}
-				
+
 				// Disable button
 				button.disabled = true;
 				button.textContent = 'Creating checkout session...';
 				errorDiv.style.display = 'none';
-				
+
 				try {
 					const response = await fetch('/wp-json/nova/v1/checkout', {
 						method: 'POST',
@@ -241,6 +408,7 @@ class Shortcode {
 							tier: tier,
 							billing_period: billingPeriod,
 							users: users,
+							support_level: supportLevel,
 							success_url: successUrl,
 							cancel_url: cancelUrl
 						})
@@ -378,6 +546,77 @@ class Shortcode {
 		.nova-tier-option.selected .nova-tier-description {
 			color: var(--white);
 		}
+
+		/* Support option styles */
+		.nova-support-option {
+			display: block;
+			padding: 12px;
+			border: 2px solid #e0e0e0;
+			border-radius: 6px;
+			margin-bottom: 8px;
+			cursor: pointer;
+			transition: all 0.2s;
+			background: #fff;
+		}
+		.nova-support-option.disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+		.nova-support-option input[type="radio"] {
+			margin-right: 10px;
+		}
+		.nova-support-content {
+			display: inline-block;
+			width: calc(100% - 30px);
+		}
+		.nova-support-content strong {
+			color: #333;
+			font-size: 15px;
+		}
+		.nova-support-badge {
+			display: inline-block;
+			padding: 3px 10px;
+			border-radius: 10px;
+			font-size: 11px;
+			font-weight: 600;
+			margin-left: 8px;
+			color: white;
+		}
+		.nova-support-badge.nova-support-free {
+			background: #4CAF50;
+		}
+		.nova-support-badge.nova-support-phone {
+			background: #2196F3;
+		}
+		.nova-support-badge.nova-support-trainer {
+			background: #FF9800;
+		}
+		.nova-support-badge.nova-support-coach {
+			background: #9C27B0;
+		}
+		.nova-support-badge.nova-support-specialist {
+			background: #F44336;
+		}
+		.nova-support-description {
+			margin-top: 4px;
+			color: #666;
+			font-size: 13px;
+		}
+		.nova-support-pricing {
+			margin-top: 4px;
+			color: #4CAF50;
+			font-size: 13px;
+			font-weight: 600;
+		}
+		.nova-support-option:hover:not(.disabled) {
+			border-color: #4CAF50;
+			background: #f9f9f9;
+		}
+		.nova-support-option.selected {
+			border-color: #4CAF50;
+			background: #e8f5e9;
+		}
+
 		.nova-help-text {
 			display: block;
 			margin-top: 5px;

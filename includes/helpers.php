@@ -99,6 +99,19 @@ function get_price_id( string $country, string $tier, string $period ): string {
 }
 
 /**
+ * Get a support price ID from the support price map.
+ *
+ * @param string $country      The country code (au or nz).
+ * @param string $support_tier The support tier (phone_standard, phone_professional, trainer, coach, specialist).
+ * @param string $period       The billing period (quarterly or annual).
+ * @return string The price ID, or empty string if not found.
+ */
+function get_support_price_id( string $country, string $support_tier, string $period ): string {
+	$prices = get_option( 'nova_checkout_support_prices', array() );
+	return $prices[ $country ][ $support_tier ][ $period ] ?? '';
+}
+
+/**
  * Log a message (for debugging, never log secrets).
  *
  * @param string $message The message to log.
