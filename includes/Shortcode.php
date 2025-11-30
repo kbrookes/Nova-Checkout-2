@@ -246,6 +246,15 @@ class Shortcode {
 					<small class="nova-help-text">Minimum 1 user, maximum 1000 users</small>
 				</div>
 
+				<!-- Pricing Summary -->
+				<div class="nova-pricing-summary">
+					<div class="nova-pricing-total">
+						<span class="nova-pricing-label">Total</span>
+						<span class="nova-pricing-amount">$<span id="nova-total-amount">0.00</span> per month</span>
+					</div>
+					<div class="nova-pricing-period">Billed <span id="nova-billing-text">Quarterly</span></div>
+				</div>
+
 				<!-- Error Message -->
 				<div class="nova-error" style="display: none;"></div>
 
@@ -320,6 +329,50 @@ class Shortcode {
 					this.querySelector('input[type="radio"]').checked = true;
 				});
 			});
+
+			// Update pricing summary
+			function updatePricingSummary() {
+				const tier = form.querySelector('input[name="tier"]:checked')?.value;
+				const supportLevel = form.querySelector('input[name="support_level"]:checked')?.value || 'self-service';
+				const users = parseInt(form.querySelector('[name="users"]').value) || 1;
+
+				// Get billing period
+				let billingPeriod = '';
+				const billingRadio = form.querySelector('input[name="billing_period"]:checked');
+				const billingSelect = form.querySelector('select[name="billing_period"]');
+				if (billingRadio) {
+					billingPeriod = billingRadio.value;
+				} else if (billingSelect) {
+					billingPeriod = billingSelect.value;
+				}
+
+				// Get product pricing
+				const tierOption = form.querySelector('[data-tier="' + tier + '"]');
+				const productMonthlyCostKey = 'monthlyCost' + (country === 'au' ? 'Au' : 'Nz');
+				const productMonthlyCost = tierOption ? parseFloat(tierOption.dataset[productMonthlyCostKey]) || 0 : 0;
+				const productTotal = productMonthlyCost * users;
+
+				// Get support pricing
+				const supportOption = form.querySelector('[data-support="' + supportLevel + '"]');
+				const supportMonthlyCostKey = 'monthlyCost' + (country === 'au' ? 'Au' : 'Nz');
+				const supportMonthlyCost = supportOption ? parseFloat(supportOption.dataset[supportMonthlyCostKey]) || 0 : 0;
+				const supportIsPerUser = supportOption ? supportOption.dataset.perUser === 'true' : false;
+				const supportTotal = supportIsPerUser ? (supportMonthlyCost * users) : supportMonthlyCost;
+
+				// Calculate total
+				const totalPerMonth = productTotal + supportTotal;
+
+				// Update display
+				const totalAmountEl = document.getElementById('nova-total-amount');
+				const billingTextEl = document.getElementById('nova-billing-text');
+
+				if (totalAmountEl) {
+					totalAmountEl.textContent = totalPerMonth.toFixed(2);
+				}
+				if (billingTextEl && billingPeriod) {
+					billingTextEl.textContent = billingPeriod === 'quarterly' ? 'Quarterly' : 'Annually';
+				}
+			}
 
 			// Update support options based on tier and user count
 			function updateSupportOptions() {
@@ -399,10 +452,43 @@ class Shortcode {
 						}
 					}
 				});
+
+				// Update pricing summary after support options update
+				updatePricingSummary();
 			}
 
 			// Listen for user count changes
-			form.querySelector('[name="users"]').addEventListener('input', updateSupportOptions);
+			form.querySelector('[name="users"]').addEventListener('input', function() {
+				updateSupportOptions();
+				updatePricingSummary();
+			});
+
+			// Listen for tier changes
+			form.querySelectorAll('input[name="tier"]').forEach(radio => {
+				radio.addEventListener('change', function() {
+					updateSupportOptions();
+					updatePricingSummary();
+				});
+			});
+
+			// Listen for support level changes
+			form.querySelectorAll('input[name="support_level"]').forEach(radio => {
+				radio.addEventListener('change', function() {
+					updatePricingSummary();
+				});
+			});
+
+			// Listen for billing period changes
+			const billingRadios = form.querySelectorAll('input[name="billing_period"]');
+			const billingSelect = form.querySelector('select[name="billing_period"]');
+			if (billingRadios.length > 0) {
+				billingRadios.forEach(radio => {
+					radio.addEventListener('change', updatePricingSummary);
+				});
+			}
+			if (billingSelect) {
+				billingSelect.addEventListener('change', updatePricingSummary);
+			}
 
 			// Initial update
 			updateSupportOptions();
@@ -669,6 +755,41 @@ class Shortcode {
 			background: #e8f5e9;
 		}
 
+		/* Pricing Summary */
+		.nova-pricing-summary {
+			background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+			border-radius: 8px;
+			padding: 20px;
+			margin: 20px 0;
+			text-align: center;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+			order: 10;
+		}
+		.nova-pricing-total {
+			margin-bottom: 8px;
+		}
+		.nova-pricing-label {
+			display: block;
+			color: rgba(255,255,255,0.9);
+			font-size: 14px;
+			font-weight: 500;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			margin-bottom: 5px;
+		}
+		.nova-pricing-amount {
+			display: block;
+			color: #fff;
+			font-size: 32px;
+			font-weight: 700;
+			line-height: 1.2;
+		}
+		.nova-pricing-period {
+			color: rgba(255,255,255,0.95);
+			font-size: 16px;
+			font-weight: 500;
+		}
+
 		.nova-help-text {
 			display: block;
 			margin-top: 5px;
@@ -820,10 +941,17 @@ class Shortcode {
 				max-width: 900px;
 			}
 
+			/* Use flexbox for form to control order */
+			.nova-checkout-form {
+				display: flex;
+				flex-direction: column;
+			}
+
 			/* Center billing period above columns */
 			.nova-form-group.nova-billing-period {
 				text-align: center;
 				margin-bottom: 30px;
+				order: 1;
 			}
 
 			/* Two column layout for product and support */
@@ -832,6 +960,13 @@ class Shortcode {
 				grid-template-columns: 1fr 1fr;
 				gap: 20px;
 				margin-bottom: 30px;
+				order: 2;
+			}
+
+			/* Pricing summary below product selection on desktop */
+			.nova-pricing-summary {
+				order: 3;
+				margin: 0 0 30px 0;
 			}
 
 			/* Hide regular input, show slider */
@@ -842,6 +977,15 @@ class Shortcode {
 				display: block;
 				text-align: center;
 				margin-bottom: 30px;
+				order: 4;
+			}
+
+			/* Error and submit button at the end */
+			.nova-error {
+				order: 5;
+			}
+			.nova-submit-button {
+				order: 6;
 			}
 		}
 		</style>
