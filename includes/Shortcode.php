@@ -117,29 +117,29 @@ class Shortcode {
 					<div class="nova-form-group">
 					<label class="nova-label">Select Your Plan</label>
 
-					<label class="nova-tier-option" data-tier="standard">
+					<label class="nova-tier-option" data-tier="standard" data-monthly-cost-au="29" data-monthly-cost-nz="32">
 						<input type="radio" name="tier" value="standard" <?php checked( $default_tier, 'standard' ); ?> required>
 						<div class="nova-tier-content">
 							<strong>Act! Advantage Standard</strong>
-							<span class="nova-tier-badge nova-tier-standard">STANDARD</span>
+							<span class="nova-tier-badge">STANDARD</span>
 							<div class="nova-tier-description">Perfect for small teams getting started</div>
 						</div>
 					</label>
 
-					<label class="nova-tier-option" data-tier="professional">
+					<label class="nova-tier-option" data-tier="professional" data-monthly-cost-au="39" data-monthly-cost-nz="43">
 						<input type="radio" name="tier" value="professional" <?php checked( $default_tier, 'professional' ); ?> required>
 						<div class="nova-tier-content">
 							<strong>Act! Advantage Professional</strong>
-							<span class="nova-tier-badge nova-tier-professional">PROFESSIONAL</span>
+							<span class="nova-tier-badge">PROFESSIONAL</span>
 							<div class="nova-tier-description">For growing teams with advanced needs</div>
 						</div>
 					</label>
 
-					<label class="nova-tier-option" data-tier="ultimate">
+					<label class="nova-tier-option" data-tier="ultimate" data-monthly-cost-au="49" data-monthly-cost-nz="54">
 						<input type="radio" name="tier" value="ultimate" <?php checked( $default_tier, 'ultimate' ); ?> required>
 						<div class="nova-tier-content">
 							<strong>Act! Advantage Ultimate</strong>
-							<span class="nova-tier-badge nova-tier-ultimate">ULTIMATE</span>
+							<span class="nova-tier-badge">ULTIMATE</span>
 							<div class="nova-tier-description">Enterprise-grade features and support</div>
 						</div>
 					</label>
@@ -208,6 +208,15 @@ class Shortcode {
 						</div>
 					</label>
 				</div>
+
+				<!-- Pricing Summary -->
+				<div class="nova-pricing-summary">
+					<div class="nova-pricing-total">
+						<span class="nova-pricing-label">Total</span>
+						<span class="nova-pricing-amount">$<span id="nova-total-amount">0.00</span> per month</span>
+					</div>
+					<div class="nova-pricing-period">Billed <span id="nova-billing-text">Quarterly</span></div>
+				</div>
 				</div><!-- End .nova-selections-grid -->
 
 				<!-- Number of Users - Slider (Desktop) -->
@@ -244,15 +253,6 @@ class Shortcode {
 						required
 					>
 					<small class="nova-help-text">Minimum 1 user, maximum 1000 users</small>
-				</div>
-
-				<!-- Pricing Summary -->
-				<div class="nova-pricing-summary">
-					<div class="nova-pricing-total">
-						<span class="nova-pricing-label">Total</span>
-						<span class="nova-pricing-amount">$<span id="nova-total-amount">0.00</span> per month</span>
-					</div>
-					<div class="nova-pricing-period">Billed <span id="nova-billing-text">Quarterly</span></div>
 				</div>
 
 				<!-- Error Message -->
@@ -593,7 +593,7 @@ class Shortcode {
 		?>
 		<style>
 		.nova-checkout-form-wrapper {
-			max-width: 600px;
+			width: 100%;
 			margin: 0 auto;
 		}
 		.nova-checkout-form {
@@ -633,7 +633,7 @@ class Shortcode {
 		.nova-tier-option input[type="radio"] {
 			margin-right: 10px;
 			vertical-align: top;
-			margin-top: 2px;
+			margin-top: 3px;
 		}
 		.nova-tier-content {
 			display: inline-block;
@@ -651,14 +651,8 @@ class Shortcode {
 			font-weight: 600;
 			margin-left: 10px;
 			color: white;
-			transition: all 0.2s;
-		}
-		/* Unselected tier badges */
-		.nova-tier-option .nova-tier-badge {
 			background: var(--primary);
-		}
-		.nova-tier-option[data-tier="professional"] .nova-tier-badge {
-			background: var(--warning);
+			transition: all 0.2s;
 		}
 		.nova-tier-description {
 			margin-top: 8px;
@@ -700,7 +694,7 @@ class Shortcode {
 		.nova-support-option input[type="radio"] {
 			margin-right: 10px;
 			vertical-align: top;
-			margin-top: 2px;
+			margin-top: 3px;
 		}
 		.nova-support-content {
 			display: inline-block;
@@ -718,21 +712,8 @@ class Shortcode {
 			font-weight: 600;
 			margin-left: 8px;
 			color: white;
-		}
-		.nova-support-badge.nova-support-free {
-			background: #4CAF50;
-		}
-		.nova-support-badge.nova-support-phone {
-			background: #2196F3;
-		}
-		.nova-support-badge.nova-support-trainer {
-			background: #FF9800;
-		}
-		.nova-support-badge.nova-support-coach {
-			background: #9C27B0;
-		}
-		.nova-support-badge.nova-support-specialist {
-			background: #F44336;
+			background: var(--primary);
+			transition: all 0.2s;
 		}
 		.nova-support-description {
 			margin-top: 4px;
@@ -754,39 +735,42 @@ class Shortcode {
 			border-color: #4CAF50;
 			background: #e8f5e9;
 		}
+		.nova-support-option.selected .nova-support-badge {
+			background: var(--warning);
+		}
 
 		/* Pricing Summary */
 		.nova-pricing-summary {
-			background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+			background: #f5f5f5;
+			border: 2px solid #4CAF50;
 			border-radius: 8px;
-			padding: 20px;
+			padding: 16px 20px;
 			margin: 20px 0;
 			text-align: center;
-			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 			order: 10;
 		}
 		.nova-pricing-total {
-			margin-bottom: 8px;
+			margin-bottom: 4px;
 		}
 		.nova-pricing-label {
 			display: block;
-			color: rgba(255,255,255,0.9);
-			font-size: 14px;
-			font-weight: 500;
+			color: #666;
+			font-size: 13px;
+			font-weight: 600;
 			text-transform: uppercase;
-			letter-spacing: 1px;
-			margin-bottom: 5px;
+			letter-spacing: 0.5px;
+			margin-bottom: 4px;
 		}
 		.nova-pricing-amount {
 			display: block;
-			color: #fff;
-			font-size: 32px;
+			color: #4CAF50;
+			font-size: 28px;
 			font-weight: 700;
 			line-height: 1.2;
 		}
 		.nova-pricing-period {
-			color: rgba(255,255,255,0.95);
-			font-size: 16px;
+			color: #666;
+			font-size: 14px;
 			font-weight: 500;
 		}
 
@@ -937,10 +921,6 @@ class Shortcode {
 
 		/* Responsive Layout - Desktop */
 		@media (min-width: 768px) {
-			.nova-checkout-form-wrapper {
-				max-width: 900px;
-			}
-
 			/* Use flexbox for form to control order */
 			.nova-checkout-form {
 				display: flex;
@@ -954,19 +934,33 @@ class Shortcode {
 				order: 1;
 			}
 
-			/* Two column layout for product and support */
+			/* Grid layout: product column, pricing summary, support column */
 			.nova-selections-grid {
 				display: grid;
 				grid-template-columns: 1fr 1fr;
+				grid-template-rows: auto auto;
 				gap: 20px;
 				margin-bottom: 30px;
 				order: 2;
 			}
 
-			/* Pricing summary below product selection on desktop */
+			/* Product selection in first column, first row */
+			.nova-selections-grid > div:nth-child(1) {
+				grid-column: 1;
+				grid-row: 1;
+			}
+
+			/* Support selection in second column, spans both rows */
+			.nova-selections-grid > div:nth-child(2) {
+				grid-column: 2;
+				grid-row: 1 / 3;
+			}
+
+			/* Pricing summary in first column, second row */
 			.nova-pricing-summary {
-				order: 3;
-				margin: 0 0 30px 0;
+				grid-column: 1;
+				grid-row: 2;
+				margin: 0;
 			}
 
 			/* Hide regular input, show slider */
@@ -977,15 +971,15 @@ class Shortcode {
 				display: block;
 				text-align: center;
 				margin-bottom: 30px;
-				order: 4;
+				order: 3;
 			}
 
 			/* Error and submit button at the end */
 			.nova-error {
-				order: 5;
+				order: 4;
 			}
 			.nova-submit-button {
-				order: 6;
+				order: 5;
 			}
 		}
 		</style>
