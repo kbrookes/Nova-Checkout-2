@@ -3,7 +3,7 @@
  * Plugin Name: Nova Stripe Checkout v2
  * Plugin URI: https://github.com/kbrookes/Nova-Checkout-2
  * Description: WordPress plugin for Stripe Checkout subscriptions with per-seat pricing and AU/NZ account routing
- * Version: 2.3.0
+ * Version: 2.4.0
  * Requires at least: 6.0
  * Requires PHP: 8.1
  * Author: Kelsey Brookes
@@ -27,7 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'NOVA_CHECKOUT_VERSION', '2.3.0' );
+define( 'NOVA_CHECKOUT_VERSION', '2.4.0' );
 define( 'NOVA_CHECKOUT_FILE', __FILE__ );
 define( 'NOVA_CHECKOUT_PATH', plugin_dir_path( __FILE__ ) );
 define( 'NOVA_CHECKOUT_URL', plugin_dir_url( __FILE__ ) );
