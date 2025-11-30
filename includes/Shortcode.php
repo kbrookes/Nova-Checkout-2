@@ -117,7 +117,7 @@ class Shortcode {
 					<div class="nova-form-group">
 					<label class="nova-label">Select Your Plan</label>
 
-					<label class="nova-tier-option" data-tier="standard" data-monthly-cost-au="29" data-monthly-cost-nz="32">
+					<label class="nova-tier-option" data-tier="standard" data-monthly-cost-au-quarterly="<?php echo esc_attr( get_product_monthly_cost( 'au', 'standard', 'quarterly' ) ); ?>" data-monthly-cost-nz-quarterly="<?php echo esc_attr( get_product_monthly_cost( 'nz', 'standard', 'quarterly' ) ); ?>" data-monthly-cost-au-annual="<?php echo esc_attr( get_product_monthly_cost( 'au', 'standard', 'annual' ) ); ?>" data-monthly-cost-nz-annual="<?php echo esc_attr( get_product_monthly_cost( 'nz', 'standard', 'annual' ) ); ?>">
 						<input type="radio" name="tier" value="standard" <?php checked( $default_tier, 'standard' ); ?> required>
 						<div class="nova-tier-content">
 							<strong>Act! Advantage Standard</strong>
@@ -126,7 +126,7 @@ class Shortcode {
 						</div>
 					</label>
 
-					<label class="nova-tier-option" data-tier="professional" data-monthly-cost-au="39" data-monthly-cost-nz="43">
+					<label class="nova-tier-option" data-tier="professional" data-monthly-cost-au-quarterly="<?php echo esc_attr( get_product_monthly_cost( 'au', 'professional', 'quarterly' ) ); ?>" data-monthly-cost-nz-quarterly="<?php echo esc_attr( get_product_monthly_cost( 'nz', 'professional', 'quarterly' ) ); ?>" data-monthly-cost-au-annual="<?php echo esc_attr( get_product_monthly_cost( 'au', 'professional', 'annual' ) ); ?>" data-monthly-cost-nz-annual="<?php echo esc_attr( get_product_monthly_cost( 'nz', 'professional', 'annual' ) ); ?>">
 						<input type="radio" name="tier" value="professional" <?php checked( $default_tier, 'professional' ); ?> required>
 						<div class="nova-tier-content">
 							<strong>Act! Advantage Professional</strong>
@@ -135,7 +135,7 @@ class Shortcode {
 						</div>
 					</label>
 
-					<label class="nova-tier-option" data-tier="ultimate" data-monthly-cost-au="49" data-monthly-cost-nz="54">
+					<label class="nova-tier-option" data-tier="ultimate" data-monthly-cost-au-quarterly="<?php echo esc_attr( get_product_monthly_cost( 'au', 'ultimate', 'quarterly' ) ); ?>" data-monthly-cost-nz-quarterly="<?php echo esc_attr( get_product_monthly_cost( 'nz', 'ultimate', 'quarterly' ) ); ?>" data-monthly-cost-au-annual="<?php echo esc_attr( get_product_monthly_cost( 'au', 'ultimate', 'annual' ) ); ?>" data-monthly-cost-nz-annual="<?php echo esc_attr( get_product_monthly_cost( 'nz', 'ultimate', 'annual' ) ); ?>">
 						<input type="radio" name="tier" value="ultimate" <?php checked( $default_tier, 'ultimate' ); ?> required>
 						<div class="nova-tier-content">
 							<strong>Act! Advantage Ultimate</strong>
@@ -346,15 +346,17 @@ class Shortcode {
 					billingPeriod = billingSelect.value;
 				}
 
-				// Get product pricing
+				// Get product pricing based on billing period
 				const tierOption = form.querySelector('[data-tier="' + tier + '"]');
-				const productMonthlyCostKey = 'monthlyCost' + (country === 'au' ? 'Au' : 'Nz');
+				const countryCode = country === 'au' ? 'Au' : 'Nz';
+				const periodSuffix = billingPeriod === 'quarterly' ? 'Quarterly' : 'Annual';
+				const productMonthlyCostKey = 'monthlyCost' + countryCode + periodSuffix;
 				const productMonthlyCost = tierOption ? parseFloat(tierOption.dataset[productMonthlyCostKey]) || 0 : 0;
 				const productTotal = productMonthlyCost * users;
 
-				// Get support pricing
+				// Get support pricing (support doesn't vary by billing period)
 				const supportOption = form.querySelector('[data-support="' + supportLevel + '"]');
-				const supportMonthlyCostKey = 'monthlyCost' + (country === 'au' ? 'Au' : 'Nz');
+				const supportMonthlyCostKey = 'monthlyCost' + countryCode;
 				const supportMonthlyCost = supportOption ? parseFloat(supportOption.dataset[supportMonthlyCostKey]) || 0 : 0;
 				const supportIsPerUser = supportOption ? supportOption.dataset.perUser === 'true' : false;
 				const supportTotal = supportIsPerUser ? (supportMonthlyCost * users) : supportMonthlyCost;

@@ -223,3 +223,47 @@ function get_support_description( string $support_tier ): string {
 	$descriptions = get_option( 'nova_checkout_support_descriptions', $defaults );
 	return $descriptions[ $support_tier ] ?? ( $defaults[ $support_tier ] ?? '' );
 }
+
+/**
+ * Get product monthly cost.
+ *
+ * @param string $country The country code (au or nz).
+ * @param string $tier    The tier (standard, professional, ultimate).
+ * @param string $period  The billing period (quarterly or annual).
+ * @return string The monthly cost.
+ */
+function get_product_monthly_cost( string $country, string $tier, string $period ): string {
+	$defaults = array(
+		'au' => array(
+			'standard'     => array(
+				'quarterly' => '29',
+				'annual'    => '27',
+			),
+			'professional' => array(
+				'quarterly' => '39',
+				'annual'    => '37',
+			),
+			'ultimate'     => array(
+				'quarterly' => '49',
+				'annual'    => '47',
+			),
+		),
+		'nz' => array(
+			'standard'     => array(
+				'quarterly' => '32',
+				'annual'    => '30',
+			),
+			'professional' => array(
+				'quarterly' => '43',
+				'annual'    => '41',
+			),
+			'ultimate'     => array(
+				'quarterly' => '54',
+				'annual'    => '52',
+			),
+		),
+	);
+
+	$costs = get_option( 'nova_checkout_product_monthly_costs', $defaults );
+	return $costs[ $country ][ $tier ][ $period ] ?? ( $defaults[ $country ][ $tier ][ $period ] ?? '' );
+}

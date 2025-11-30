@@ -33,6 +33,13 @@ class Prices {
 	private const SUPPORT_DESCRIPTIONS_OPTION_NAME = 'nova_checkout_support_descriptions';
 
 	/**
+	 * Product monthly costs option name.
+	 *
+	 * @var string
+	 */
+	private const PRODUCT_MONTHLY_COSTS_OPTION_NAME = 'nova_checkout_product_monthly_costs';
+
+	/**
 	 * Settings page slug.
 	 *
 	 * @var string
@@ -165,6 +172,16 @@ class Prices {
 				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_support_descriptions' ),
 				'default'           => $this->get_default_support_descriptions(),
+			)
+		);
+
+		register_setting(
+			self::PAGE_SLUG,
+			self::PRODUCT_MONTHLY_COSTS_OPTION_NAME,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_product_monthly_costs' ),
+				'default'           => $this->get_default_product_monthly_costs(),
 			)
 		);
 	}
@@ -364,6 +381,44 @@ class Prices {
 	}
 
 	/**
+	 * Get default product monthly costs structure.
+	 *
+	 * @return array<string, array<string, array<string, string>>>
+	 */
+	public function get_default_product_monthly_costs(): array {
+		return array(
+			'au' => array(
+				'standard'     => array(
+					'quarterly' => '29',
+					'annual'    => '27',
+				),
+				'professional' => array(
+					'quarterly' => '39',
+					'annual'    => '37',
+				),
+				'ultimate'     => array(
+					'quarterly' => '49',
+					'annual'    => '47',
+				),
+			),
+			'nz' => array(
+				'standard'     => array(
+					'quarterly' => '32',
+					'annual'    => '30',
+				),
+				'professional' => array(
+					'quarterly' => '43',
+					'annual'    => '41',
+				),
+				'ultimate'     => array(
+					'quarterly' => '54',
+					'annual'    => '52',
+				),
+			),
+		);
+	}
+
+	/**
 	 * Sanitize support descriptions before saving.
 	 *
 	 * @param mixed $input The input to sanitize.
@@ -385,6 +440,33 @@ class Prices {
 	}
 
 	/**
+	 * Sanitize product monthly costs before saving.
+	 *
+	 * @param mixed $input The input to sanitize.
+	 * @return array<string, array<string, array<string, string>>> The sanitized product monthly costs.
+	 */
+	public function sanitize_product_monthly_costs( $input ): array {
+		if ( ! is_array( $input ) ) {
+			return $this->get_default_product_monthly_costs();
+		}
+
+		$sanitized = array();
+		$defaults  = $this->get_default_product_monthly_costs();
+
+		foreach ( array( 'au', 'nz' ) as $country ) {
+			foreach ( array( 'standard', 'professional', 'ultimate' ) as $tier ) {
+				foreach ( array( 'quarterly', 'annual' ) as $period ) {
+					$value = $input[ $country ][ $tier ][ $period ] ?? '';
+					// Sanitize as a decimal number.
+					$sanitized[ $country ][ $tier ][ $period ] = is_numeric( $value ) ? (string) abs( (float) $value ) : $defaults[ $country ][ $tier ][ $period ];
+				}
+			}
+		}
+
+		return $sanitized;
+	}
+
+	/**
 	 * Get a support description.
 	 *
 	 * @param string $support_tier The support tier key.
@@ -393,6 +475,19 @@ class Prices {
 	public function get_support_description( string $support_tier ): string {
 		$descriptions = get_option( self::SUPPORT_DESCRIPTIONS_OPTION_NAME, $this->get_default_support_descriptions() );
 		return $descriptions[ $support_tier ] ?? '';
+	}
+
+	/**
+	 * Get product monthly cost.
+	 *
+	 * @param string $country The country code (au or nz).
+	 * @param string $tier    The tier (standard, professional, ultimate).
+	 * @param string $period  The billing period (quarterly or annual).
+	 * @return string The monthly cost.
+	 */
+	public function get_product_monthly_cost( string $country, string $tier, string $period ): string {
+		$costs = get_option( self::PRODUCT_MONTHLY_COSTS_OPTION_NAME, $this->get_default_product_monthly_costs() );
+		return $costs[ $country ][ $tier ][ $period ] ?? '';
 	}
 
 	/**
@@ -495,9 +590,10 @@ class Prices {
 			return;
 		}
 
-		$prices               = get_option( self::OPTION_NAME, $this->get_default_prices() );
-		$support_prices       = get_option( self::SUPPORT_OPTION_NAME, $this->get_default_support_prices() );
-		$support_descriptions = get_option( self::SUPPORT_DESCRIPTIONS_OPTION_NAME, $this->get_default_support_descriptions() );
+		$prices                = get_option( self::OPTION_NAME, $this->get_default_prices() );
+		$support_prices        = get_option( self::SUPPORT_OPTION_NAME, $this->get_default_support_prices() );
+		$support_descriptions  = get_option( self::SUPPORT_DESCRIPTIONS_OPTION_NAME, $this->get_default_support_descriptions() );
+		$product_monthly_costs = get_option( self::PRODUCT_MONTHLY_COSTS_OPTION_NAME, $this->get_default_product_monthly_costs() );
 
 		?>
 		<div class="wrap">
@@ -527,6 +623,7 @@ class Prices {
 
 				<h2 class="nav-tab-wrapper">
 					<a href="#product-prices" class="nav-tab nav-tab-active"><?php esc_html_e( 'Product Prices', 'nova-checkout' ); ?></a>
+					<a href="#product-monthly-costs" class="nav-tab"><?php esc_html_e( 'Product Monthly Costs', 'nova-checkout' ); ?></a>
 					<a href="#support-prices" class="nav-tab"><?php esc_html_e( 'Support Prices', 'nova-checkout' ); ?></a>
 				<a href="#support-descriptions" class="nav-tab"><?php esc_html_e( 'Support Descriptions', 'nova-checkout' ); ?></a>
 				</h2>
@@ -543,6 +640,26 @@ class Prices {
 
 					<div id="tab-product-nz" class="nova-prices-tab-content">
 						<?php $this->render_prices_table( 'nz', $prices ); ?>
+					</div>
+				</div>
+
+				<div id="product-monthly-costs" class="nova-section-content" style="display: none;">
+					<h3><?php esc_html_e( 'Product Monthly Costs', 'nova-checkout' ); ?></h3>
+					<p class="description">
+						<?php esc_html_e( 'Set the monthly cost displayed to customers for each product tier and billing period. Annual subscriptions typically have a lower monthly cost than quarterly.', 'nova-checkout' ); ?>
+					</p>
+
+					<div class="nova-prices-tabs">
+						<button type="button" class="active" data-tab="tab-monthly-au"><?php esc_html_e( '🇦🇺 Australia', 'nova-checkout' ); ?></button>
+						<button type="button" data-tab="tab-monthly-nz"><?php esc_html_e( '🇳🇿 New Zealand', 'nova-checkout' ); ?></button>
+					</div>
+
+					<div id="tab-monthly-au" class="nova-prices-tab-content active">
+						<?php $this->render_product_monthly_costs_table( 'au', $product_monthly_costs ); ?>
+					</div>
+
+					<div id="tab-monthly-nz" class="nova-prices-tab-content">
+						<?php $this->render_product_monthly_costs_table( 'nz', $product_monthly_costs ); ?>
 					</div>
 				</div>
 
@@ -767,6 +884,93 @@ class Prices {
 			<a href="https://dashboard.stripe.com/products" target="_blank" class="nova-stripe-link">
 				<?php esc_html_e( 'View prices in Stripe Dashboard →', 'nova-checkout' ); ?>
 			</a>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render product monthly costs table for a specific country.
+	 *
+	 * @param string               $country The country code (au or nz).
+	 * @param array<string, mixed> $costs   The monthly costs array.
+	 * @return void
+	 */
+	private function render_product_monthly_costs_table( string $country, array $costs ): void {
+		$country_name = 'au' === $country ? __( 'Australia', 'nova-checkout' ) : __( 'New Zealand', 'nova-checkout' );
+		$currency     = 'au' === $country ? 'AUD' : 'NZD';
+		$tiers        = array(
+			'standard'     => array(
+				'label' => __( 'Standard', 'nova-checkout' ),
+				'class' => 'nova-tier-standard',
+			),
+			'professional' => array(
+				'label' => __( 'Professional', 'nova-checkout' ),
+				'class' => 'nova-tier-professional',
+			),
+			'ultimate'     => array(
+				'label' => __( 'Ultimate', 'nova-checkout' ),
+				'class' => 'nova-tier-ultimate',
+			),
+		);
+
+		?>
+		<table class="nova-prices-table">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Pricing Tier', 'nova-checkout' ); ?></th>
+					<th><?php esc_html_e( 'Quarterly (per month)', 'nova-checkout' ); ?></th>
+					<th><?php esc_html_e( 'Annual (per month)', 'nova-checkout' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $tiers as $tier_key => $tier_data ) : ?>
+					<?php
+					$quarterly_value = $costs[ $country ][ $tier_key ]['quarterly'] ?? '';
+					$annual_value    = $costs[ $country ][ $tier_key ]['annual'] ?? '';
+					?>
+					<tr>
+						<td>
+							<span class="nova-tier-badge <?php echo esc_attr( $tier_data['class'] ); ?>">
+								<?php echo esc_html( $tier_data['label'] ); ?>
+							</span>
+						</td>
+						<td>
+							<input
+								type="number"
+								step="0.01"
+								min="0"
+								name="<?php echo esc_attr( self::PRODUCT_MONTHLY_COSTS_OPTION_NAME ); ?>[<?php echo esc_attr( $country ); ?>][<?php echo esc_attr( $tier_key ); ?>][quarterly]"
+								value="<?php echo esc_attr( $quarterly_value ); ?>"
+								placeholder="29.00"
+								class="small-text"
+							/>
+							<span class="description"><?php echo esc_html( $currency ); ?></span>
+						</td>
+						<td>
+							<input
+								type="number"
+								step="0.01"
+								min="0"
+								name="<?php echo esc_attr( self::PRODUCT_MONTHLY_COSTS_OPTION_NAME ); ?>[<?php echo esc_attr( $country ); ?>][<?php echo esc_attr( $tier_key ); ?>][annual]"
+								value="<?php echo esc_attr( $annual_value ); ?>"
+								placeholder="27.00"
+								class="small-text"
+							/>
+							<span class="description"><?php echo esc_html( $currency ); ?></span>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: country name */
+				esc_html__( 'Enter the monthly cost displayed to customers for %s subscriptions. Annual subscriptions typically have a lower monthly cost than quarterly.', 'nova-checkout' ),
+				esc_html( $country_name )
+			);
+			?>
 		</p>
 		<?php
 	}
