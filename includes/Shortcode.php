@@ -38,7 +38,7 @@ class Shortcode {
 				'show_tiers'             => 'true',
 				'default_tier'           => '',
 				'default_billing_period' => '',
-				'default_users'          => '5',
+				'default_users'          => '1',
 				'use_url_params'         => 'true',
 				'show_period_toggle'     => 'true',
 			),
@@ -152,7 +152,7 @@ class Shortcode {
 						<div class="nova-support-content">
 							<strong>Self-Service</strong>
 							<span class="nova-support-badge nova-support-free">INCLUDED</span>
-							<div class="nova-support-description">Access to knowledge base and community forums</div>
+							<div class="nova-support-description"><?php echo esc_html( get_support_description( 'self_service' ) ); ?></div>
 						</div>
 					</label>
 
@@ -161,7 +161,7 @@ class Shortcode {
 						<div class="nova-support-content">
 							<strong>Support + Phone (Standard)</strong>
 							<span class="nova-support-badge nova-support-phone">PHONE</span>
-							<div class="nova-support-description">Email + phone support during business hours</div>
+							<div class="nova-support-description"><?php echo esc_html( get_support_description( 'phone_standard' ) ); ?></div>
 							<div class="nova-support-pricing"></div>
 						</div>
 					</label>
@@ -171,7 +171,7 @@ class Shortcode {
 						<div class="nova-support-content">
 							<strong>Support + Phone (Professional)</strong>
 							<span class="nova-support-badge nova-support-phone">PHONE</span>
-							<div class="nova-support-description">Email + phone support during business hours</div>
+							<div class="nova-support-description"><?php echo esc_html( get_support_description( 'phone_professional' ) ); ?></div>
 							<div class="nova-support-pricing"></div>
 						</div>
 					</label>
@@ -181,7 +181,7 @@ class Shortcode {
 						<div class="nova-support-content">
 							<strong>Support + Trainer</strong>
 							<span class="nova-support-badge nova-support-trainer">TRAINER</span>
-							<div class="nova-support-description">Phone support + dedicated trainer for onboarding</div>
+							<div class="nova-support-description"><?php echo esc_html( get_support_description( 'trainer' ) ); ?></div>
 							<div class="nova-support-pricing"></div>
 						</div>
 					</label>
@@ -191,7 +191,7 @@ class Shortcode {
 						<div class="nova-support-content">
 							<strong>Support + Coach</strong>
 							<span class="nova-support-badge nova-support-coach">COACH</span>
-							<div class="nova-support-description">Trainer + ongoing coaching and best practices</div>
+							<div class="nova-support-description"><?php echo esc_html( get_support_description( 'coach' ) ); ?></div>
 							<div class="nova-support-pricing"></div>
 						</div>
 					</label>
@@ -201,7 +201,7 @@ class Shortcode {
 						<div class="nova-support-content">
 							<strong>Support + Specialist</strong>
 							<span class="nova-support-badge nova-support-specialist">SPECIALIST</span>
-							<div class="nova-support-description">Coach + dedicated specialist for advanced needs</div>
+							<div class="nova-support-description"><?php echo esc_html( get_support_description( 'specialist' ) ); ?></div>
 							<div class="nova-support-pricing"></div>
 						</div>
 					</label>

@@ -203,3 +203,23 @@ function create_error_response( string $message, int $code = 400 ): \WP_Error {
 		array( 'status' => $code )
 	);
 }
+
+/**
+ * Get a support description.
+ *
+ * @param string $support_tier The support tier key.
+ * @return string The description.
+ */
+function get_support_description( string $support_tier ): string {
+	$defaults = array(
+		'self_service'       => 'Access to knowledge base and community forums',
+		'phone_standard'     => 'Email + phone support during business hours',
+		'phone_professional' => 'Email + phone support during business hours',
+		'trainer'            => 'Phone support + dedicated trainer for onboarding',
+		'coach'              => 'Trainer + ongoing coaching and best practices',
+		'specialist'         => 'Coach + dedicated specialist for advanced needs',
+	);
+
+	$descriptions = get_option( 'nova_checkout_support_descriptions', $defaults );
+	return $descriptions[ $support_tier ] ?? ( $defaults[ $support_tier ] ?? '' );
+}

@@ -26,6 +26,13 @@ class Prices {
 	private const SUPPORT_OPTION_NAME = 'nova_checkout_support_prices';
 
 	/**
+	 * Support descriptions option name.
+	 *
+	 * @var string
+	 */
+	private const SUPPORT_DESCRIPTIONS_OPTION_NAME = 'nova_checkout_support_descriptions';
+
+	/**
 	 * Settings page slug.
 	 *
 	 * @var string
@@ -148,6 +155,16 @@ class Prices {
 				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_support_prices' ),
 				'default'           => $this->get_default_support_prices(),
+			)
+		);
+
+		register_setting(
+			self::PAGE_SLUG,
+			self::SUPPORT_DESCRIPTIONS_OPTION_NAME,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_support_descriptions' ),
+				'default'           => $this->get_default_support_descriptions(),
 			)
 		);
 	}
@@ -331,6 +348,54 @@ class Prices {
 	}
 
 	/**
+	 * Get default support descriptions structure.
+	 *
+	 * @return array<string, string>
+	 */
+	public function get_default_support_descriptions(): array {
+		return array(
+			'self_service'       => 'Access to knowledge base and community forums',
+			'phone_standard'     => 'Email + phone support during business hours',
+			'phone_professional' => 'Email + phone support during business hours',
+			'trainer'            => 'Phone support + dedicated trainer for onboarding',
+			'coach'              => 'Trainer + ongoing coaching and best practices',
+			'specialist'         => 'Coach + dedicated specialist for advanced needs',
+		);
+	}
+
+	/**
+	 * Sanitize support descriptions before saving.
+	 *
+	 * @param mixed $input The input to sanitize.
+	 * @return array<string, string> The sanitized support descriptions.
+	 */
+	public function sanitize_support_descriptions( $input ): array {
+		if ( ! is_array( $input ) ) {
+			return $this->get_default_support_descriptions();
+		}
+
+		$sanitized = array();
+		$defaults  = $this->get_default_support_descriptions();
+
+		foreach ( $defaults as $key => $default_value ) {
+			$sanitized[ $key ] = isset( $input[ $key ] ) ? sanitize_text_field( $input[ $key ] ) : $default_value;
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Get a support description.
+	 *
+	 * @param string $support_tier The support tier key.
+	 * @return string The description.
+	 */
+	public function get_support_description( string $support_tier ): string {
+		$descriptions = get_option( self::SUPPORT_DESCRIPTIONS_OPTION_NAME, $this->get_default_support_descriptions() );
+		return $descriptions[ $support_tier ] ?? '';
+	}
+
+	/**
 	 * Sanitize support prices before saving.
 	 *
 	 * @param mixed $input The input to sanitize.
@@ -430,8 +495,9 @@ class Prices {
 			return;
 		}
 
-		$prices         = get_option( self::OPTION_NAME, $this->get_default_prices() );
-		$support_prices = get_option( self::SUPPORT_OPTION_NAME, $this->get_default_support_prices() );
+		$prices               = get_option( self::OPTION_NAME, $this->get_default_prices() );
+		$support_prices       = get_option( self::SUPPORT_OPTION_NAME, $this->get_default_support_prices() );
+		$support_descriptions = get_option( self::SUPPORT_DESCRIPTIONS_OPTION_NAME, $this->get_default_support_descriptions() );
 
 		?>
 		<div class="wrap">
@@ -462,6 +528,7 @@ class Prices {
 				<h2 class="nav-tab-wrapper">
 					<a href="#product-prices" class="nav-tab nav-tab-active"><?php esc_html_e( 'Product Prices', 'nova-checkout' ); ?></a>
 					<a href="#support-prices" class="nav-tab"><?php esc_html_e( 'Support Prices', 'nova-checkout' ); ?></a>
+				<a href="#support-descriptions" class="nav-tab"><?php esc_html_e( 'Support Descriptions', 'nova-checkout' ); ?></a>
 				</h2>
 
 				<div id="product-prices" class="nova-section-content">
@@ -492,6 +559,120 @@ class Prices {
 					<div id="tab-support-nz" class="nova-prices-tab-content">
 						<?php $this->render_support_prices_table( 'nz', $support_prices ); ?>
 					</div>
+				</div>
+
+				<div id="support-descriptions" class="nova-section-content" style="display: none;">
+					<h3><?php esc_html_e( 'Support Level Descriptions', 'nova-checkout' ); ?></h3>
+					<p class="description">
+						<?php esc_html_e( 'Customize the descriptions shown to customers for each support level in the checkout form.', 'nova-checkout' ); ?>
+					</p>
+
+					<table class="form-table">
+						<tbody>
+							<tr>
+								<th scope="row">
+									<label for="support_desc_self_service">
+										<span class="nova-tier-badge nova-tier-standard"><?php esc_html_e( 'Self-Service', 'nova-checkout' ); ?></span>
+									</label>
+								</th>
+								<td>
+									<input
+										type="text"
+										id="support_desc_self_service"
+										name="<?php echo esc_attr( self::SUPPORT_DESCRIPTIONS_OPTION_NAME ); ?>[self_service]"
+										value="<?php echo esc_attr( $support_descriptions['self_service'] ?? '' ); ?>"
+										class="large-text"
+										placeholder="<?php esc_attr_e( 'Enter description for self-service support', 'nova-checkout' ); ?>"
+									/>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">
+									<label for="support_desc_phone_standard">
+										<span class="nova-tier-badge nova-tier-standard"><?php esc_html_e( 'Phone (Standard)', 'nova-checkout' ); ?></span>
+									</label>
+								</th>
+								<td>
+									<input
+										type="text"
+										id="support_desc_phone_standard"
+										name="<?php echo esc_attr( self::SUPPORT_DESCRIPTIONS_OPTION_NAME ); ?>[phone_standard]"
+										value="<?php echo esc_attr( $support_descriptions['phone_standard'] ?? '' ); ?>"
+										class="large-text"
+										placeholder="<?php esc_attr_e( 'Enter description for phone support (standard tier)', 'nova-checkout' ); ?>"
+									/>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">
+									<label for="support_desc_phone_professional">
+										<span class="nova-tier-badge nova-tier-professional"><?php esc_html_e( 'Phone (Professional)', 'nova-checkout' ); ?></span>
+									</label>
+								</th>
+								<td>
+									<input
+										type="text"
+										id="support_desc_phone_professional"
+										name="<?php echo esc_attr( self::SUPPORT_DESCRIPTIONS_OPTION_NAME ); ?>[phone_professional]"
+										value="<?php echo esc_attr( $support_descriptions['phone_professional'] ?? '' ); ?>"
+										class="large-text"
+										placeholder="<?php esc_attr_e( 'Enter description for phone support (professional tier)', 'nova-checkout' ); ?>"
+									/>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">
+									<label for="support_desc_trainer">
+										<span class="nova-tier-badge nova-tier-professional"><?php esc_html_e( 'Trainer', 'nova-checkout' ); ?></span>
+									</label>
+								</th>
+								<td>
+									<input
+										type="text"
+										id="support_desc_trainer"
+										name="<?php echo esc_attr( self::SUPPORT_DESCRIPTIONS_OPTION_NAME ); ?>[trainer]"
+										value="<?php echo esc_attr( $support_descriptions['trainer'] ?? '' ); ?>"
+										class="large-text"
+										placeholder="<?php esc_attr_e( 'Enter description for trainer support', 'nova-checkout' ); ?>"
+									/>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">
+									<label for="support_desc_coach">
+										<span class="nova-tier-badge nova-tier-ultimate"><?php esc_html_e( 'Coach', 'nova-checkout' ); ?></span>
+									</label>
+								</th>
+								<td>
+									<input
+										type="text"
+										id="support_desc_coach"
+										name="<?php echo esc_attr( self::SUPPORT_DESCRIPTIONS_OPTION_NAME ); ?>[coach]"
+										value="<?php echo esc_attr( $support_descriptions['coach'] ?? '' ); ?>"
+										class="large-text"
+										placeholder="<?php esc_attr_e( 'Enter description for coach support', 'nova-checkout' ); ?>"
+									/>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">
+									<label for="support_desc_specialist">
+										<span class="nova-tier-badge nova-tier-ultimate"><?php esc_html_e( 'Specialist', 'nova-checkout' ); ?></span>
+									</label>
+								</th>
+								<td>
+									<input
+										type="text"
+										id="support_desc_specialist"
+										name="<?php echo esc_attr( self::SUPPORT_DESCRIPTIONS_OPTION_NAME ); ?>[specialist]"
+										value="<?php echo esc_attr( $support_descriptions['specialist'] ?? '' ); ?>"
+										class="large-text"
+										placeholder="<?php esc_attr_e( 'Enter description for specialist support', 'nova-checkout' ); ?>"
+									/>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
 
 				<?php submit_button( __( 'Save Price IDs', 'nova-checkout' ) ); ?>
