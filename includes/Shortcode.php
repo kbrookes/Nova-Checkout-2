@@ -90,7 +90,7 @@ class Shortcode {
 
 				<!-- Billing Period -->
 				<?php if ( $show_period_toggle ) : ?>
-				<div class="nova-form-group">
+				<div class="nova-form-group nova-billing-period">
 					<label class="nova-label">Billing Period</label>
 					<div class="switch-wrapper">
 						<input id="nova-quarterly" type="radio" name="billing_period" value="quarterly" <?php checked( $default_billing_period, 'quarterly' ); ?> <?php checked( empty( $default_billing_period ) ); ?> required>
@@ -101,7 +101,7 @@ class Shortcode {
 					</div>
 				</div>
 				<?php else : ?>
-				<div class="nova-form-group">
+				<div class="nova-form-group nova-billing-period">
 					<label for="nova-billing-period" class="nova-label">Billing Period</label>
 					<select id="nova-billing-period" name="billing_period" class="nova-select" required>
 						<option value="">Select billing period...</option>
@@ -111,8 +111,10 @@ class Shortcode {
 				</div>
 				<?php endif; ?>
 
-				<!-- Tier Selection -->
-				<div class="nova-form-group">
+				<!-- Product & Support Grid -->
+				<div class="nova-selections-grid">
+					<!-- Tier Selection -->
+					<div class="nova-form-group">
 					<label class="nova-label">Select Your Plan</label>
 
 					<label class="nova-tier-option" data-tier="standard">
@@ -206,9 +208,30 @@ class Shortcode {
 						</div>
 					</label>
 				</div>
+				</div><!-- End .nova-selections-grid -->
 
-				<!-- Number of Users -->
-				<div class="nova-form-group">
+				<!-- Number of Users - Slider (Desktop) -->
+				<div class="nova-slider-container">
+					<div class="nova-slider-wrapper">
+						<div class="nova-slider-value"><span id="nova-slider-value"><?php echo esc_html( (string) $default_users ); ?></span> Users</div>
+						<input
+							type="range"
+							id="nova-users-slider"
+							class="nova-slider"
+							min="1"
+							max="50"
+							step="1"
+							value="<?php echo esc_attr( (string) $default_users ); ?>"
+						>
+						<div class="nova-slider-labels">
+							<span>1 User</span>
+							<span>50 Users</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Number of Users - Input (Mobile) -->
+				<div class="nova-form-group nova-input-container">
 					<label for="nova-users" class="nova-label">Number of Users</label>
 					<input
 						type="number"
@@ -239,6 +262,29 @@ class Shortcode {
 			if (!form) return;
 
 			const country = form.dataset.country;
+
+			// Sync slider with input field
+			const slider = document.getElementById('nova-users-slider');
+			const usersInput = document.getElementById('nova-users');
+			const sliderValue = document.getElementById('nova-slider-value');
+
+			if (slider && usersInput && sliderValue) {
+				// Update input when slider changes
+				slider.addEventListener('input', function() {
+					usersInput.value = this.value;
+					sliderValue.textContent = this.value;
+					updateSupportOptions();
+				});
+
+				// Update slider when input changes (for mobile)
+				usersInput.addEventListener('input', function() {
+					if (slider && this.value >= 1 && this.value <= 50) {
+						slider.value = this.value;
+						sliderValue.textContent = this.value;
+					}
+					updateSupportOptions();
+				});
+			}
 
 			// Tier selection visual feedback
 			const tierOptions = form.querySelectorAll('.nova-tier-option');
@@ -500,6 +546,8 @@ class Shortcode {
 		}
 		.nova-tier-option input[type="radio"] {
 			margin-right: 10px;
+			vertical-align: top;
+			margin-top: 2px;
 		}
 		.nova-tier-content {
 			display: inline-block;
@@ -530,6 +578,7 @@ class Shortcode {
 			margin-top: 8px;
 			color: #666;
 			font-size: 14px;
+			line-height: 1.2em;
 			transition: color 0.2s;
 		}
 		/* Selected tier styling */
@@ -564,6 +613,8 @@ class Shortcode {
 		}
 		.nova-support-option input[type="radio"] {
 			margin-right: 10px;
+			vertical-align: top;
+			margin-top: 2px;
 		}
 		.nova-support-content {
 			display: inline-block;
@@ -601,6 +652,7 @@ class Shortcode {
 			margin-top: 4px;
 			color: #666;
 			font-size: 13px;
+			line-height: 1.2em;
 		}
 		.nova-support-pricing {
 			margin-top: 4px;
@@ -702,6 +754,95 @@ class Shortcode {
 			border-radius: 30px;
 			background: #4CAF50;
 			transition: transform 0.25s ease-in-out;
+		}
+
+		/* Range Slider Styles */
+		.nova-slider-container {
+			display: none;
+		}
+		.nova-slider-wrapper {
+			text-align: center;
+		}
+		.nova-slider-value {
+			font-size: 32px;
+			font-weight: 700;
+			color: #4CAF50;
+			margin-bottom: 10px;
+		}
+		.nova-slider {
+			-webkit-appearance: none;
+			appearance: none;
+			width: 100%;
+			height: 8px;
+			border-radius: 5px;
+			background: #ddd;
+			outline: none;
+			margin: 10px 0;
+		}
+		.nova-slider::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			appearance: none;
+			width: 24px;
+			height: 24px;
+			border-radius: 50%;
+			background: #4CAF50;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.nova-slider::-webkit-slider-thumb:hover {
+			background: #45a049;
+			transform: scale(1.1);
+		}
+		.nova-slider::-moz-range-thumb {
+			width: 24px;
+			height: 24px;
+			border-radius: 50%;
+			background: #4CAF50;
+			cursor: pointer;
+			border: none;
+			transition: all 0.2s;
+		}
+		.nova-slider::-moz-range-thumb:hover {
+			background: #45a049;
+			transform: scale(1.1);
+		}
+		.nova-slider-labels {
+			display: flex;
+			justify-content: space-between;
+			font-size: 12px;
+			color: #666;
+			margin-top: 5px;
+		}
+
+		/* Responsive Layout - Desktop */
+		@media (min-width: 768px) {
+			.nova-checkout-form-wrapper {
+				max-width: 900px;
+			}
+
+			/* Center billing period above columns */
+			.nova-form-group.nova-billing-period {
+				text-align: center;
+				margin-bottom: 30px;
+			}
+
+			/* Two column layout for product and support */
+			.nova-selections-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 20px;
+				margin-bottom: 30px;
+			}
+
+			/* Hide regular input, show slider */
+			.nova-input-container {
+				display: none;
+			}
+			.nova-slider-container {
+				display: block;
+				text-align: center;
+				margin-bottom: 30px;
+			}
 		}
 		</style>
 		<?php
