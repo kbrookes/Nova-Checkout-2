@@ -315,6 +315,7 @@ class Shortcode {
 					this.classList.add('selected');
 					this.querySelector('input[type="radio"]').checked = true;
 					updateSupportOptions();
+					updatePricingSummary();
 				});
 			});
 
@@ -327,6 +328,7 @@ class Shortcode {
 					supportOptions.forEach(opt => opt.classList.remove('selected'));
 					this.classList.add('selected');
 					this.querySelector('input[type="radio"]').checked = true;
+					updatePricingSummary();
 				});
 			});
 
@@ -437,6 +439,8 @@ class Shortcode {
 						// If this option was selected, reset to self-service
 						if (option.querySelector('input[type="radio"]').checked) {
 							form.querySelector('[data-support="self-service"] input[type="radio"]').checked = true;
+							// Manually trigger pricing update since programmatic change doesn't fire event
+							updatePricingSummary();
 						}
 					} else {
 						option.style.display = 'block';
