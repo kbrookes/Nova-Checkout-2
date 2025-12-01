@@ -249,11 +249,26 @@ class REST {
 
 		// Prepare session parameters.
 		$session_params = array(
-			'mode'        => 'subscription',
-			'line_items'  => $line_items,
-			'success_url' => $success_url,
-			'cancel_url'  => $cancel_url,
-			'metadata'    => array_merge(
+			'mode'                       => 'subscription',
+			'line_items'                 => $line_items,
+			'success_url'                => $success_url,
+			'cancel_url'                 => $cancel_url,
+			'billing_address_collection' => 'required',
+			'automatic_tax'              => array(
+				'enabled' => true,
+			),
+			'custom_fields'              => array(
+				array(
+					'key'      => 'company_name',
+					'label'    => array(
+						'type'   => 'custom',
+						'custom' => 'Company Name',
+					),
+					'type'     => 'text',
+					'optional' => true,
+				),
+			),
+			'metadata'                   => array_merge(
 				$metadata,
 				array(
 					'country'        => $country,
