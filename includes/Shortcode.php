@@ -215,7 +215,7 @@ class Shortcode {
 						<span class="nova-pricing-label">Total</span>
 						<span class="nova-pricing-amount">$<span id="nova-total-amount">0.00</span> per month</span>
 					</div>
-					<div class="nova-pricing-period">Billed <span id="nova-billing-text">Quarterly</span></div>
+					<div class="nova-pricing-period">ex GST, billed <span id="nova-billing-text">quarterly</span></div>
 				</div>
 				</div><!-- End .nova-selections-grid -->
 
@@ -374,7 +374,7 @@ class Shortcode {
 					totalAmountEl.textContent = totalPerMonth.toFixed(2);
 				}
 				if (billingTextEl && billingPeriod) {
-					billingTextEl.textContent = billingPeriod === 'quarterly' ? 'Quarterly' : 'Annually';
+					billingTextEl.textContent = billingPeriod === 'quarterly' ? 'quarterly' : 'annually';
 				}
 			}
 
