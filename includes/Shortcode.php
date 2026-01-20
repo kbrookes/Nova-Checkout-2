@@ -259,7 +259,7 @@ class Shortcode {
 				<div class="nova-error" style="display: none;"></div>
 
 				<!-- Submit Button -->
-				<button type="submit" class="nova-submit-button">
+				<button type="submit" class="nova-submit-button" data-click="Checkout Button">
 					<?php echo esc_html( $button_text ); ?> →
 				</button>
 			</form>
