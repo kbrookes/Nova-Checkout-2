@@ -267,3 +267,32 @@ function get_product_monthly_cost( string $country, string $tier, string $period
 	$costs = get_option( 'nova_checkout_product_monthly_costs', $defaults );
 	return $costs[ $country ][ $tier ][ $period ] ?? ( $defaults[ $country ][ $tier ][ $period ] ?? '' );
 }
+
+/**
+ * Get support monthly cost.
+ *
+ * @param string $country      The country code (au or nz).
+ * @param string $support_tier The support tier key (phone_standard, phone_professional, trainer, coach, specialist).
+ * @return string The monthly cost.
+ */
+function get_support_monthly_cost( string $country, string $support_tier ): string {
+	$defaults = array(
+		'au' => array(
+			'phone_standard'     => '18',
+			'phone_professional' => '9',
+			'trainer'            => '49',
+			'coach'              => '74',
+			'specialist'         => '99',
+		),
+		'nz' => array(
+			'phone_standard'     => '20',
+			'phone_professional' => '10',
+			'trainer'            => '55',
+			'coach'              => '83',
+			'specialist'         => '110',
+		),
+	);
+
+	$costs = get_option( 'nova_checkout_support_monthly_costs', $defaults );
+	return $costs[ $country ][ $support_tier ] ?? ( $defaults[ $country ][ $support_tier ] ?? '' );
+}

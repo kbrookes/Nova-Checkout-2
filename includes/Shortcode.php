@@ -158,7 +158,7 @@ class Shortcode {
 						</div>
 					</label>
 
-					<label class="nova-support-option" data-support="phone-standard" data-per-user="true" data-monthly-cost-au="18" data-monthly-cost-nz="20" data-max-users="2" data-tier="standard">
+					<label class="nova-support-option" data-support="phone-standard" data-per-user="true" data-monthly-cost-au="<?php echo esc_attr( get_support_monthly_cost( 'au', 'phone_standard' ) ); ?>" data-monthly-cost-nz="<?php echo esc_attr( get_support_monthly_cost( 'nz', 'phone_standard' ) ); ?>" data-max-users="2" data-tier="standard">
 						<input type="radio" name="support_level" value="phone-standard" required>
 						<div class="nova-support-content">
 							<strong>Support + Phone (Standard)</strong>
@@ -168,7 +168,7 @@ class Shortcode {
 						</div>
 					</label>
 
-					<label class="nova-support-option" data-support="phone-professional" data-per-user="true" data-monthly-cost-au="9" data-monthly-cost-nz="10" data-max-users="5" data-tier="professional">
+					<label class="nova-support-option" data-support="phone-professional" data-per-user="true" data-monthly-cost-au="<?php echo esc_attr( get_support_monthly_cost( 'au', 'phone_professional' ) ); ?>" data-monthly-cost-nz="<?php echo esc_attr( get_support_monthly_cost( 'nz', 'phone_professional' ) ); ?>" data-max-users="5" data-tier="professional">
 						<input type="radio" name="support_level" value="phone-professional" required>
 						<div class="nova-support-content">
 							<strong>Support + Phone (Professional)</strong>
@@ -178,7 +178,7 @@ class Shortcode {
 						</div>
 					</label>
 
-					<label class="nova-support-option" data-support="trainer" data-per-user="false" data-monthly-cost-au="49" data-monthly-cost-nz="55">
+					<label class="nova-support-option" data-support="trainer" data-per-user="false" data-monthly-cost-au="<?php echo esc_attr( get_support_monthly_cost( 'au', 'trainer' ) ); ?>" data-monthly-cost-nz="<?php echo esc_attr( get_support_monthly_cost( 'nz', 'trainer' ) ); ?>">
 						<input type="radio" name="support_level" value="trainer" required>
 						<div class="nova-support-content">
 							<strong>Support + Trainer</strong>
@@ -188,7 +188,7 @@ class Shortcode {
 						</div>
 					</label>
 
-					<label class="nova-support-option" data-support="coach" data-per-user="false" data-monthly-cost-au="74" data-monthly-cost-nz="83">
+					<label class="nova-support-option" data-support="coach" data-per-user="false" data-monthly-cost-au="<?php echo esc_attr( get_support_monthly_cost( 'au', 'coach' ) ); ?>" data-monthly-cost-nz="<?php echo esc_attr( get_support_monthly_cost( 'nz', 'coach' ) ); ?>">
 						<input type="radio" name="support_level" value="coach" required>
 						<div class="nova-support-content">
 							<strong>Support + Coach</strong>
@@ -198,7 +198,7 @@ class Shortcode {
 						</div>
 					</label>
 
-					<label class="nova-support-option" data-support="specialist" data-per-user="false" data-monthly-cost-au="99" data-monthly-cost-nz="110">
+					<label class="nova-support-option" data-support="specialist" data-per-user="false" data-monthly-cost-au="<?php echo esc_attr( get_support_monthly_cost( 'au', 'specialist' ) ); ?>" data-monthly-cost-nz="<?php echo esc_attr( get_support_monthly_cost( 'nz', 'specialist' ) ); ?>">
 						<input type="radio" name="support_level" value="specialist" required>
 						<div class="nova-support-content">
 							<strong>Support + Specialist</strong>

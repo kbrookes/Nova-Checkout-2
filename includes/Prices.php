@@ -40,6 +40,13 @@ class Prices {
 	private const PRODUCT_MONTHLY_COSTS_OPTION_NAME = 'nova_checkout_product_monthly_costs';
 
 	/**
+	 * Support monthly costs option name.
+	 *
+	 * @var string
+	 */
+	private const SUPPORT_MONTHLY_COSTS_OPTION_NAME = 'nova_checkout_support_monthly_costs';
+
+	/**
 	 * Settings page slug.
 	 *
 	 * @var string
@@ -182,6 +189,16 @@ class Prices {
 				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_product_monthly_costs' ),
 				'default'           => $this->get_default_product_monthly_costs(),
+			)
+		);
+
+		register_setting(
+			self::PAGE_SLUG,
+			self::SUPPORT_MONTHLY_COSTS_OPTION_NAME,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_support_monthly_costs' ),
+				'default'           => $this->get_default_support_monthly_costs(),
 			)
 		);
 	}
@@ -491,6 +508,67 @@ class Prices {
 	}
 
 	/**
+	 * Get default support monthly costs structure.
+	 *
+	 * @return array<string, array<string, string>>
+	 */
+	public function get_default_support_monthly_costs(): array {
+		return array(
+			'au' => array(
+				'phone_standard'     => '18',
+				'phone_professional' => '9',
+				'trainer'            => '49',
+				'coach'              => '74',
+				'specialist'         => '99',
+			),
+			'nz' => array(
+				'phone_standard'     => '20',
+				'phone_professional' => '10',
+				'trainer'            => '55',
+				'coach'              => '83',
+				'specialist'         => '110',
+			),
+		);
+	}
+
+	/**
+	 * Sanitize support monthly costs before saving.
+	 *
+	 * @param mixed $input The input to sanitize.
+	 * @return array<string, array<string, string>> The sanitized support monthly costs.
+	 */
+	public function sanitize_support_monthly_costs( $input ): array {
+		if ( ! is_array( $input ) ) {
+			return $this->get_default_support_monthly_costs();
+		}
+
+		$sanitized = array();
+		$defaults  = $this->get_default_support_monthly_costs();
+
+		foreach ( array( 'au', 'nz' ) as $country ) {
+			foreach ( array( 'phone_standard', 'phone_professional', 'trainer', 'coach', 'specialist' ) as $support_tier ) {
+				$value = $input[ $country ][ $support_tier ] ?? '';
+				// Sanitize as a decimal number.
+				$sanitized[ $country ][ $support_tier ] = is_numeric( $value ) ? (string) abs( (float) $value ) : $defaults[ $country ][ $support_tier ];
+			}
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Get support monthly cost.
+	 *
+	 * @param string $country      The country code (au or nz).
+	 * @param string $support_tier The support tier key.
+	 * @return string The monthly cost.
+	 */
+	public function get_support_monthly_cost( string $country, string $support_tier ): string {
+		$costs = get_option( self::SUPPORT_MONTHLY_COSTS_OPTION_NAME, $this->get_default_support_monthly_costs() );
+		return $costs[ $country ][ $support_tier ] ?? '';
+	}
+
+	/**
 	 * Sanitize support prices before saving.
 	 *
 	 * @param mixed $input The input to sanitize.
@@ -594,6 +672,7 @@ class Prices {
 		$support_prices        = get_option( self::SUPPORT_OPTION_NAME, $this->get_default_support_prices() );
 		$support_descriptions  = get_option( self::SUPPORT_DESCRIPTIONS_OPTION_NAME, $this->get_default_support_descriptions() );
 		$product_monthly_costs = get_option( self::PRODUCT_MONTHLY_COSTS_OPTION_NAME, $this->get_default_product_monthly_costs() );
+		$support_monthly_costs = get_option( self::SUPPORT_MONTHLY_COSTS_OPTION_NAME, $this->get_default_support_monthly_costs() );
 
 		?>
 		<div class="wrap">
@@ -625,7 +704,8 @@ class Prices {
 					<a href="#product-prices" class="nav-tab nav-tab-active"><?php esc_html_e( 'Product Prices', 'nova-checkout' ); ?></a>
 					<a href="#product-monthly-costs" class="nav-tab"><?php esc_html_e( 'Product Monthly Costs', 'nova-checkout' ); ?></a>
 					<a href="#support-prices" class="nav-tab"><?php esc_html_e( 'Support Prices', 'nova-checkout' ); ?></a>
-				<a href="#support-descriptions" class="nav-tab"><?php esc_html_e( 'Support Descriptions', 'nova-checkout' ); ?></a>
+					<a href="#support-monthly-costs" class="nav-tab"><?php esc_html_e( 'Support Monthly Costs', 'nova-checkout' ); ?></a>
+					<a href="#support-descriptions" class="nav-tab"><?php esc_html_e( 'Support Descriptions', 'nova-checkout' ); ?></a>
 				</h2>
 
 				<div id="product-prices" class="nova-section-content">
@@ -675,6 +755,26 @@ class Prices {
 
 					<div id="tab-support-nz" class="nova-prices-tab-content">
 						<?php $this->render_support_prices_table( 'nz', $support_prices ); ?>
+					</div>
+				</div>
+
+				<div id="support-monthly-costs" class="nova-section-content" style="display: none;">
+					<h3><?php esc_html_e( 'Support Monthly Costs', 'nova-checkout' ); ?></h3>
+					<p class="description">
+						<?php esc_html_e( 'Set the monthly cost displayed to customers for each support level. These costs do not vary by billing period.', 'nova-checkout' ); ?>
+					</p>
+
+					<div class="nova-prices-tabs">
+						<button type="button" class="active" data-tab="tab-support-monthly-au"><?php esc_html_e( '🇦🇺 Australia', 'nova-checkout' ); ?></button>
+						<button type="button" data-tab="tab-support-monthly-nz"><?php esc_html_e( '🇳🇿 New Zealand', 'nova-checkout' ); ?></button>
+					</div>
+
+					<div id="tab-support-monthly-au" class="nova-prices-tab-content active">
+						<?php $this->render_support_monthly_costs_table( 'au', $support_monthly_costs ); ?>
+					</div>
+
+					<div id="tab-support-monthly-nz" class="nova-prices-tab-content">
+						<?php $this->render_support_monthly_costs_table( 'nz', $support_monthly_costs ); ?>
 					</div>
 				</div>
 
@@ -968,6 +1068,87 @@ class Prices {
 			printf(
 				/* translators: %s: country name */
 				esc_html__( 'Enter the monthly cost displayed to customers for %s subscriptions. Annual subscriptions typically have a lower monthly cost than quarterly.', 'nova-checkout' ),
+				esc_html( $country_name )
+			);
+			?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render the support monthly costs table for a specific country.
+	 *
+	 * @param string               $country The country code (au or nz).
+	 * @param array<string, mixed> $costs   The monthly costs array.
+	 * @return void
+	 */
+	private function render_support_monthly_costs_table( string $country, array $costs ): void {
+		$country_name   = 'au' === $country ? __( 'Australia', 'nova-checkout' ) : __( 'New Zealand', 'nova-checkout' );
+		$currency       = 'au' === $country ? 'AUD' : 'NZD';
+		$support_levels = array(
+			'phone_standard'     => array(
+				'label' => __( 'Phone (Standard)', 'nova-checkout' ),
+				'class' => 'nova-tier-standard',
+			),
+			'phone_professional' => array(
+				'label' => __( 'Phone (Professional)', 'nova-checkout' ),
+				'class' => 'nova-tier-professional',
+			),
+			'trainer'            => array(
+				'label' => __( 'Trainer', 'nova-checkout' ),
+				'class' => 'nova-tier-professional',
+			),
+			'coach'              => array(
+				'label' => __( 'Coach', 'nova-checkout' ),
+				'class' => 'nova-tier-ultimate',
+			),
+			'specialist'         => array(
+				'label' => __( 'Specialist', 'nova-checkout' ),
+				'class' => 'nova-tier-ultimate',
+			),
+		);
+
+		?>
+		<table class="nova-prices-table">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Support Level', 'nova-checkout' ); ?></th>
+					<th><?php esc_html_e( 'Monthly Cost', 'nova-checkout' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $support_levels as $level_key => $level_data ) : ?>
+					<?php
+					$monthly_value = $costs[ $country ][ $level_key ] ?? '';
+					?>
+					<tr>
+						<td>
+							<span class="nova-tier-badge <?php echo esc_attr( $level_data['class'] ); ?>">
+								<?php echo esc_html( $level_data['label'] ); ?>
+							</span>
+						</td>
+						<td>
+							<input
+								type="number"
+								step="0.01"
+								min="0"
+								name="<?php echo esc_attr( self::SUPPORT_MONTHLY_COSTS_OPTION_NAME ); ?>[<?php echo esc_attr( $country ); ?>][<?php echo esc_attr( $level_key ); ?>]"
+								value="<?php echo esc_attr( $monthly_value ); ?>"
+								placeholder="<?php echo esc_attr( $this->get_default_support_monthly_costs()[ $country ][ $level_key ] ?? '0.00' ); ?>"
+								class="small-text"
+							/>
+							<span class="description"><?php echo esc_html( $currency ); ?></span>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: country name */
+				esc_html__( 'Enter the monthly cost displayed to customers for %s support options. Support pricing does not vary by billing period.', 'nova-checkout' ),
 				esc_html( $country_name )
 			);
 			?>
