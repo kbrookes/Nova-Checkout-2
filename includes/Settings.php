@@ -83,7 +83,7 @@ class Settings {
 				'label_for'   => 'au_secret_key',
 				'field_name'  => 'au_secret_key',
 				'type'        => 'password',
-				'description' => __( 'Stripe secret key for Australian account (sk_live_... or sk_test_...)', 'nova-checkout' ),
+				'description' => __( 'Stripe secret key for Australian account (sk_live_..., sk_test_..., rk_live_..., or rk_test_...)', 'nova-checkout' ),
 			)
 		);
 
@@ -98,7 +98,7 @@ class Settings {
 				'label_for'   => 'nz_secret_key',
 				'field_name'  => 'nz_secret_key',
 				'type'        => 'password',
-				'description' => __( 'Stripe secret key for New Zealand account (sk_live_... or sk_test_...)', 'nova-checkout' ),
+				'description' => __( 'Stripe secret key for New Zealand account (sk_live_..., sk_test_..., rk_live_..., or rk_test_...)', 'nova-checkout' ),
 			)
 		);
 
@@ -204,7 +204,7 @@ class Settings {
 			add_settings_error(
 				self::OPTION_NAME,
 				'invalid_secret_key',
-				__( 'Invalid Stripe secret key format. Must start with sk_live_ or sk_test_.', 'nova-checkout' ),
+				__( 'Invalid Stripe secret key format. Must start with sk_live_, sk_test_, rk_live_, or rk_test_.', 'nova-checkout' ),
 				'error'
 			);
 			return '';

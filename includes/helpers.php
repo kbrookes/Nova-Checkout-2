@@ -58,8 +58,9 @@ function is_valid_price_id( string $price_id ): bool {
  * @return bool True if valid, false otherwise.
  */
 function is_valid_secret_key( string $secret_key ): bool {
-	// Stripe secret keys start with 'sk_' (live) or 'sk_test_'.
-	return (bool) preg_match( '/^sk_(live|test)_[a-zA-Z0-9]+$/', $secret_key );
+	// Stripe secret keys start with 'sk_' (standard) or 'rk_' (restricted).
+	// Both can be live or test keys.
+	return (bool) preg_match( '/^(sk|rk)_(live|test)_[a-zA-Z0-9]+$/', $secret_key );
 }
 
 /**
